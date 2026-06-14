@@ -1,0 +1,96 @@
+## .NET / Visual Studio
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Ll]og/
+[Ll]ogs/
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+## Build results
+[Dd]ebugPublic/
+[Rr]eleases/
+build/
+artifacts/
+*.dll
+*.exe
+*.pdb
+*.user
+*.suo
+*.cache
+*.ilk
+*.log
+*.lib
+*.sbr
+*.bsc
+
+## Visual Studio
+.vs/
+*.rsuser
+*.DotSettings.user
+launchSettings.json
+
+## Rider
+.idea/
+
+## VS Code
+.vscode/
+
+## User-specific files
+*.user
+*.userosscache
+*.sln.docstates
+
+## Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+## Uploaded files (keep the folder, ignore contents)
+wwwroot/uploads/*
+!wwwroot/uploads/.gitkeep
+
+## User-uploaded media (videos, audio)
+wwwroot/videos/*
+!wwwroot/videos/.gitkeep
+wwwroot/audio/*
+!wwwroot/audio/.gitkeep
+
+## Large binary / media files
+*.mp4
+*.mp3
+*.wav
+*.avi
+*.mov
+*.webm
+*.flac
+*.aac
+
+## Secrets
+appsettings.*.local.json
+*.pfx
+*.key
+
+## Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+coverage.json
+coverage.cobertura.xml
+coveragereport/

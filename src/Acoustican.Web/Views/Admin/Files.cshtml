@@ -1,0 +1,48 @@
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Files";
+}
+
+<h2 class="mb-4">File Management & Uploads</h2>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Upload Image</h5>
+            </div>
+            <div class="card-body d-flex flex-column justify-content-between">
+                <div>
+                    <p class="text-muted small">Supports JPEG, PNG, WebP, GIF. Used for courses thumbnails, backgrounds, and student testimonials.</p>
+                    <input type="file" id="imageFile" class="form-control mb-3" accept="image/*">
+                </div>
+                <div>
+                    <button class="btn btn-primary w-100" onclick="uploadImage()">
+                        <i class="fas fa-upload"></i> Upload Image
+                    </button>
+                    <div id="imageResponse" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Upload Video</h5>
+            </div>
+            <div class="card-body d-flex flex-column justify-content-between">
+                <div>
+                    <p class="text-muted small">Supports MP4, WebM, MOV. Used for lessons previews and hero backgrounds.</p>
+                    <input type="file" id="videoFile" class="form-control mb-3" accept="video/*">
+                </div>
+                <div>
+                    <button class="btn btn-primary w-100" onclick="uploadVideo()">
+                        <i class="fas fa-upload"></i> Upload Video
+                    </button>
+                    <div id="videoResponse" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,102 @@
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Modules";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Course Modules</h2>
+    <div class="d-flex gap-2">
+        <select class="form-select" id="moduleCourseFilter" style="width: 250px;" onchange="loadModules()">
+            <option value="">Select a Course...</option>
+        </select>
+        <button class="btn btn-primary" onclick="showModuleForm()">
+            <i class="fas fa-plus"></i> Add Module
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Title</th>
+                        <th>Duration</th>
+                        <th>Order</th>
+                        <th>Published</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="modulesTable">
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">Select a course to view modules...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="moduleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="moduleModalTitle">Add Module</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="moduleForm">
+                    <input type="hidden" id="moduleId">
+                    <div class="mb-3">
+                        <label class="form-label">Course</label>
+                        <select class="form-select" id="moduleCourseId" required></select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Module Number</label>
+                            <input type="number" class="form-control" id="moduleNumber" required>
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-control" id="moduleTitle" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="moduleDescription" rows="3" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Duration (Min)</label>
+                            <input type="number" class="form-control" id="moduleDuration" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="moduleOrder" value="0">
+                        </div>
+                        <div class="col-md-4 mb-3 d-flex align-items-end">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="modulePublished">
+                                <label class="form-check-label">Published</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveModule()">Save Module</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            populateCourseDropdowns();
+        });
+    </script>
+}

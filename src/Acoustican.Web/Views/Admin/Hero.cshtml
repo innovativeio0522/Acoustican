@@ -1,0 +1,71 @@
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Hero Section";
+}
+
+<h2 class="mb-4">Hero Section Management</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form id="heroForm" onsubmit="saveHero(event)">
+            <input type="hidden" id="heroId">
+            <div class="mb-3">
+                <label class="form-label">Main Title</label>
+                <input type="text" class="form-control" id="heroTitle" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Highlighted Subtitle</label>
+                <input type="text" class="form-control" id="heroSubtitle" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea class="form-control" id="heroDescription" rows="3" required></textarea>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Background Video URL</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="heroVideoUrl">
+                        <input type="file" id="heroVideoFile" class="d-none" accept="video/*">
+                        <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('heroVideoFile').click()">
+                            <i class="fas fa-upload"></i> Upload
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Background Image URL</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="heroImageUrl">
+                        <input type="file" id="heroImageFile" class="d-none" accept="image/*">
+                        <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('heroImageFile').click()">
+                            <i class="fas fa-upload"></i> Upload
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">VdoCipher Preview Video ID</label>
+                <input type="text" class="form-control" id="heroPreviewVideoId" placeholder="e.g. c2d8e1d68ba5449343adb7a66f4c6ed3">
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Primary Button Text</label>
+                    <input type="text" class="form-control" id="heroPrimaryBtn">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Secondary Button Text</label>
+                    <input type="text" class="form-control" id="heroSecondaryBtn">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Hero Content</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHero();
+        });
+    </script>
+}

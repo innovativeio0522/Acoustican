@@ -1,0 +1,11 @@
+- [ ] Review requested change: rename AdminUsers table/entity to Users (including DbSet, seeding, migrations impact)
+- [ ] Create subscription implementation (Plan A):
+  - [ ] Add Models/UserSubscription.cs
+  - [ ] Add ApplicationDbContext DbSet<UserSubscription>
+  - [ ] Add Services/SubscriptionService.cs (Stripe checkout + webhook verification + upsert)
+  - [ ] Add Services/EntitlementService.cs (pricing tier -> feature keys -> entitlement checks)
+  - [ ] Add Controllers/SubscriptionController.cs (checkout/status/webhook)
+  - [ ] Apply entitlement enforcement to premium endpoints (at minimum VideosController OTP and any future premium course/module endpoints)
+- [ ] Wire up DI in Program.cs
+- [ ] Add database migration and run dotnet build
+

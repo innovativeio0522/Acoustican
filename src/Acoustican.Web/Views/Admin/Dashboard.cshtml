@@ -1,0 +1,43 @@
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard Overview</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card text-center">
+            <div class="stat-number" id="statCourses">-</div>
+            <div class="stat-label">Total Courses</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card text-center">
+            <div class="stat-number" id="statPublished">-</div>
+            <div class="stat-label">Published Courses</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card text-center">
+            <div class="stat-number" id="statTestimonials">-</div>
+            <div class="stat-label">Testimonials</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card text-center">
+            <div class="stat-number" id="statPricing">-</div>
+            <div class="stat-label">Pricing Tiers</div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboard();
+        });
+    </script>
+}

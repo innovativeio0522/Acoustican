@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>@ViewData["Title"] - Acoustican Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <script>
+        if (!localStorage.getItem('adminToken')) {
+            window.location.href = '/admin';
+        }
+    </script>
+
+    <style>
+        :root {
+            --primary: #f5a623;
+            --dark: #0a0a0b;
+            --darker: #16161a;
+            --light-text: #ffffff;
+            --muted-text: #a0a0a8;
+        }
+
+        * {
+            color-scheme: dark;
+        }
+
+        body {
+            background: var(--dark);
+            color: var(--light-text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .navbar {
+            background: var(--darker) !important;
+            border-bottom: 1px solid #222228;
+        }
+
+        .sidebar {
+            background: var(--darker);
+            border-right: 1px solid #222228;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            overflow-y: auto;
+            padding-top: 60px;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 80px 20px 20px 20px;
+        }
+
+        .nav-link {
+            color: var(--muted-text) !important;
+            border-left: 3px solid transparent;
+            padding-left: 15px;
+            margin-bottom: 5px;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--primary) !important;
+            border-left-color: var(--primary);
+        }
+
+        .card {
+            background: var(--darker);
+            border: 1px solid #222228;
+            color: var(--light-text);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: #e0951a;
+            color: var(--dark);
+        }
+
+        .btn-secondary {
+            background: #32323a;
+            border: 1px solid #44444a;
+            color: var(--light-text);
+        }
+
+        .btn-secondary:hover {
+            background: #40404a;
+            color: var(--light-text);
+            border-color: #55555a;
+        }
+
+        .badge-primary {
+            background: var(--primary);
+            color: var(--dark);
+        }
+
+        .table {
+            background: var(--darker);
+            color: var(--light-text);
+        }
+
+        .table thead {
+            border-bottom: 2px solid #222228;
+        }
+
+        .table tbody tr {
+            border-bottom: 1px solid #222228;
+        }
+
+        .table tbody tr:hover {
+            background: #1a1a20;
+        }
+
+        .form-control,
+        .form-select {
+            background: var(--darker);
+            color: var(--light-text);
+            border: 1px solid #222228;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background: var(--darker);
+            color: var(--light-text);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.2rem rgba(245, 166, 35, 0.25);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .modal-content {
+            background: var(--darker);
+            border: 1px solid #222228;
+            color: var(--light-text);
+        }
+
+        .modal-header, .modal-footer {
+            border-color: #222228;
+        }
+
+        .btn-close {
+            filter: invert(1);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--darker), #1a1a20);
+            border: 1px solid #222228;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--muted-text);
+            font-size: 0.9rem;
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <nav class="navbar navbar-dark fixed-top">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-music"></i> Acoustican Admin
+            </span>
+            <span class="text-muted" id="userDisplay">
+                <i class="fas fa-user-circle"></i> <span id="userName">Admin</span>
+                <button class="btn btn-sm btn-outline-danger ms-2" onclick="logout()">Logout</button>
+            </span>
+        </div>
+    </nav>
+
+    <nav class="sidebar">
+        <div class="position-sticky">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "dashboard" ? "active" : "")" href="/admin/dashboard">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "courses" ? "active" : "")" href="/admin/courses">
+                        <i class="fas fa-graduation-cap me-2"></i> Courses
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "modules" ? "active" : "")" href="/admin/modules">
+                        <i class="fas fa-book me-2"></i> Modules
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "testimonials" ? "active" : "")" href="/admin/testimonials">
+                        <i class="fas fa-star me-2"></i> Testimonials
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "pricing" ? "active" : "")" href="/admin/pricing">
+                        <i class="fas fa-tags me-2"></i> Pricing
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "hero" ? "active" : "")" href="/admin/hero">
+                        <i class="fas fa-image me-2"></i> Hero Section
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "files" ? "active" : "")" href="/admin/files">
+                        <i class="fas fa-folder-open me-2"></i> Files
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        @RenderBody()
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/admin.js"></script>
+    
+    <script>
+        const userDataStr = localStorage.getItem('userData');
+        if (userDataStr) {
+            try {
+                const userData = JSON.parse(userDataStr);
+                if (userData && userData.fullName) {
+                    document.getElementById('userName').textContent = userData.fullName;
+                }
+            } catch (e) {
+                console.error("Error parsing user data", e);
+            }
+        }
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

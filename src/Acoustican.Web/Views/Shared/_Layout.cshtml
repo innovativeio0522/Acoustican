@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <title>@ViewData["Title"] — GuitarVerse Academy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="/style.css?v=@DateTime.UtcNow.Ticks">
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+
+<body>
+
+    <!-- Ambient Glows -->
+    <div class="ambient-glow glow-top-left"></div>
+    <div class="ambient-glow glow-mid-right"></div>
+
+    <!-- NAVIGATION -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <div class="logo-icon">🎸</div>
+                GuitarVerse Academy
+            </a>
+            <ul class="nav-links">
+                <li><a href="/courses" class='@(ViewData["ActivePage"]?.ToString() == "Courses" ? "nav-active" : "")'>Courses</a></li>
+                <li><a href="/#about">About</a></li>
+                <li><a href="/#contact">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <div id="userProfile" class="user-profile d-none">
+                    <span id="userFullName" class="user-name"></span>
+                    <button onclick="handleLogout()" class="btn-logout">Logout</button>
+                </div>
+                <div id="authActions" class="auth-actions">
+                    <button onclick="openAuthModal('login')" class="btn-login">Login</button>
+                    <a href="/courses" class="nav-cta">Get Started</a>
+                </div>
+            </div>
+            <button class="mobile-menu-btn">☰</button>
+        </div>
+    </nav>
+
+    @RenderBody()
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="/" class="logo">
+                    <div class="logo-icon">🎸</div>
+                    GuitarVerse Academy
+                </a>
+                <p>Master your instrument with the world's most immersive online guitar education platform.</p>
+                <div class="footer-social">
+                    <a href="#">𝕏</a>
+                    <a href="#">📷</a>
+                    <a href="#">▶</a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="/courses">Courses</a></li>
+                    <li><a href="#">Instructor Team</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Support</h4>
+                <ul>
+                    <li><a href="#">FAQ</a></li>
+                    <li><a href="#">Support Center</a></li>
+                    <li><a href="#">Contact Us</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© @DateTime.Now.Year GuitarVerse Academy. All rights reserved.</p>
+            <p>Made with ❤️ for Musicians</p>
+        </div>
+    </footer>
+
+    <!-- AUTH MODAL -->
+    <div id="authModal" class="auth-modal d-none">
+        <div class="auth-modal-backdrop" onclick="closeAuthModal()"></div>
+        <div class="auth-modal-content">
+            <button class="auth-modal-close" onclick="closeAuthModal()">✕</button>
+            <div id="loginView">
+                <div class="auth-header">
+                    <h2>Welcome Back</h2>
+                    <p>Continue your musical journey</p>
+                </div>
+                <div id="loginError" class="auth-error"></div>
+                <form class="auth-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="loginEmail" placeholder="name@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                        <div style="margin-top: 8px; text-align: right;">
+                            <a href="/forgot-password" style="color: #f5a623; font-size: 0.9rem; text-decoration: none;">
+                                Forgot password?
+                            </a>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary">Sign In</button>
+                </form>
+                <div class="auth-footer">
+                    Don't have an account?<button onclick="switchAuthView('signup')">Sign Up</button>
+                </div>
+            </div>
+
+            <div id="signupView" class="d-none">
+                <div class="auth-header">
+                    <h2>Create Account</h2>
+                    <p>Start your guitar mastery today</p>
+                </div>
+                <div id="signupError" class="auth-error"></div>
+                <form class="auth-form" onsubmit="handleSignup(event)">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="signupName" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="signupEmail" placeholder="name@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="signupPassword" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Create Account</button>
+                </form>
+                <div class="auth-footer">
+                    Already have an account?<button onclick="switchAuthView('login')">Sign In</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ENROLLMENT CHECKOUT MODAL -->
+    <div class="enroll-modal" id="enrollModal">
+        <div class="enroll-modal-backdrop"></div>
+        <div class="enroll-modal-content">
+            <button class="enroll-modal-close">✕</button>
+            <h3>Join GuitarVerse</h3>
+            <p class="selected-plan-text">Plan Selected: <span>Pro Track</span></p>
+            <form id="enrollForm">
+                <div class="form-group">
+                    <label for="enrollName">Full Name</label>
+                    <input type="text" id="enrollName" required placeholder="e.g. Jimi Hendrix">
+                </div>
+                <div class="form-group">
+                    <label for="enrollEmail">Email Address</label>
+                    <input type="email" id="enrollEmail" required placeholder="e.g. jimi@guitarverse.com">
+                </div>
+                <div class="form-group">
+                    <label for="enrollPhone">Phone Number</label>
+                    <input type="tel" id="enrollPhone" required placeholder="e.g. +91 99999 88888">
+                </div>
+                <button type="submit" class="btn-primary"
+                        style="width: 100%; justify-content: center; margin-top: 10px;">Confirm & Enroll</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast-notification" id="toast">
+        <div class="toast-icon">🎸</div>
+        <div class="toast-content">
+            <div class="toast-title">Success</div>
+            <div class="toast-message">Enrollment Successful! Welcome to GuitarVerse.</div>
+        </div>
+        <div class="toast-progress"></div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="/js/gsap.min.js"></script>
+    <script src="/js/ScrollTrigger.min.js"></script>
+    <script src="/js/auth.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+
+</html>

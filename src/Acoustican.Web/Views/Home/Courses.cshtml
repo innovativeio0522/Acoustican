@@ -1,0 +1,118 @@
+@model List<CourseDto>
+@{
+    ViewData["Title"] = "All Courses";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="/courses.css">
+}
+
+<!-- PAGE HERO -->
+<section class="cp-hero">
+    <div class="cp-hero-inner">
+        <div class="cp-hero-text">
+            <div class="hero-badge">🎸 @Model.Count+ Professional Modules</div>
+            <h1 class="cp-hero-title">Every Course.<br><span>One Destination.</span></h1>
+            <p class="cp-hero-desc">From your very first chord to stage-ready mastery — browse, filter, and find the exact path that fits your level and style.</p>
+            <div class="cp-hero-stats">
+                <div class="cp-stat"><span class="cp-stat-num">@Model.Count</span><span class="cp-stat-label">Courses</span></div>
+                <div class="cp-stat-divider"></div>
+                <div class="cp-stat"><span class="cp-stat-num">240+</span><span class="cp-stat-label">Lessons</span></div>
+                <div class="cp-stat-divider"></div>
+                <div class="cp-stat"><span class="cp-stat-num">10K+</span><span class="cp-stat-label">Students</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FILTER BAR -->
+<section class="cp-filter-bar">
+    <div class="cp-filter-inner">
+        <div class="cp-filter-tabs" role="tablist">
+            <button class="cp-tab active" data-filter="all">All</button>
+            <button class="cp-tab" data-filter="beginner">Beginner</button>
+            <button class="cp-tab" data-filter="intermediate">Intermediate</button>
+            <button class="cp-tab" data-filter="advanced">Advanced</button>
+            <button class="cp-tab" data-filter="masterclass">Masterclass</button>
+        </div>
+        <div class="cp-filter-right">
+            <div class="cp-search-wrap">
+                <svg class="cp-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="text" class="cp-search" placeholder="Search courses…" aria-label="Search courses">
+            </div>
+            <select class="cp-sort" aria-label="Sort courses">
+                <option value="popular">Most Popular</option>
+                <option value="newest">Newest</option>
+                <option value="rating">Top Rated</option>
+                <option value="duration-asc">Shortest First</option>
+                <option value="duration-desc">Longest First</option>
+            </select>
+        </div>
+    </div>
+</section>
+
+<!-- COURSES GRID -->
+<main class="cp-main">
+    <div class="cp-results-bar">
+        <span class="cp-results-count"><span id="visibleCount">@Model.Count</span> courses</span>
+    </div>
+
+    <div class="cp-grid" id="coursesGrid">
+        @for (int i = 0; i < Model.Count; i++)
+            {
+                var course = Model[i];
+                var hours = course.DurationMinutes / 60;
+                var mins = course.DurationMinutes % 60;
+                <a href="/courses/@course.Id" class="cp-card-link">
+                    <article class="cp-card"
+                             data-level="@course.Level.ToLower()"
+                             data-title="@course.Title.ToLower()"
+                             data-rating="@course.Rating"
+                             data-duration="@course.DurationMinutes"
+                             data-popular="@(i + 1)">
+                        <div class="cp-card-image-wrap">
+                            <img src="@(course.ThumbnailUrl ?? "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600&h=340&fit=crop&q=80")"
+                                 alt="@course.Title" class="cp-card-image" loading="lazy">
+                            @if (course.IsBestseller)
+                            {
+                                <span class="course-badge">Bestseller</span>
+                            }
+                        </div>
+                        <div class="cp-card-body">
+                            <h2 class="cp-card-title">@course.Title</h2>
+                            <p class="course-description">@course.Description</p>
+                            <p class="course-instructor">@course.InstructorName</p>
+                            <div class="course-rating">
+                                <span class="rating-score">@course.Rating</span>
+                                <span class="rating-stars">★★★★★</span>
+                                <span class="rating-count">(@course.ReviewCount)</span>
+                            </div>
+                            <div class="course-meta">
+                                <span class="course-meta-item">@course.LectureCount lectures</span>
+                                <span class="course-meta-item">@hours total hours</span>
+                                <span class="course-meta-item">@course.Level</span>
+                            </div>
+                            <div class="course-price-and-button">
+                                <div class="course-price">
+                                    <span class="price-current">₹@course.Price.ToString("N0")</span>
+                                    <span class="price-original">₹@course.OriginalPrice.ToString("N0")</span>
+                                </div>
+                                <button class="course-btn" onclick="event.stopPropagation()">Add to cart</button>
+                            </div>
+                        </div>
+                    </article>
+                </a>
+            }
+    </div>
+
+    <!-- Empty state -->
+    <div class="cp-empty" id="cpEmpty" style="display:none;">
+        <div class="cp-empty-icon">🎸</div>
+        <h3>No courses found</h3>
+        <p>Try a different filter or search term.</p>
+    </div>
+</main>
+
+@section Scripts {
+    <script src="/courses.js"></script>
+}

@@ -1,0 +1,213 @@
+@model CourseDto
+@{
+    ViewData["Title"] = Model.Title;
+    ViewData["ActivePage"] = "Courses";
+    var hours = Model.DurationMinutes / 60;
+    var mins = Model.DurationMinutes % 60;
+}
+
+<!-- Ambient Glows -->
+<div class="ambient-glow glow-top-left"></div>
+<div class="ambient-glow glow-mid-right"></div>
+
+<!-- COURSE HERO -->
+<section class="course-hero">
+    <div class="course-hero-inner">
+        <div class="course-hero-left">
+            <nav class="course-breadcrumb">
+                <a href="/">Home</a> / 
+                <a href="/courses">Courses</a> / 
+                <span>@Model.Title</span>
+            </nav>
+            <h1 class="course-hero-title">@Model.Title</h1>
+            <p class="course-hero-subtitle">@Model.Description</p>
+            <div class="course-hero-meta">
+                <div class="course-rating">
+                    <span class="rating-score">@Model.Rating</span>
+                    <span class="rating-stars">★★★★★</span>
+                    <span class="rating-count">(@Model.ReviewCount reviews)</span>
+                </div>
+                <span class="course-meta-item">@Model.StudentCount students</span>
+                <span class="course-meta-item">@Model.Level</span>
+            </div>
+            <div class="course-instructor">
+                <img src="https://ui-avatars.com/api/?name=@Uri.EscapeDataString(Model.InstructorName)&background=f5a623&color=0a0a0b" 
+                     alt="@Model.InstructorName" 
+                     class="instructor-avatar">
+                <div class="instructor-info">
+                    <span class="instructor-label">Created by</span>
+                    <span class="instructor-name">@Model.InstructorName</span>
+                </div>
+            </div>
+        </div>
+        <div class="course-hero-right">
+            <div class="course-card-widget">
+                <div class="course-widget-image-wrap">
+                    <img src="@(Model.ThumbnailUrl ?? "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600&h=340&fit=crop&q=80")" 
+                         alt="@Model.Title" 
+                         class="course-widget-image">
+                    @if (Model.IsBestseller)
+                    {
+                        <span class="course-badge">Bestseller</span>
+                    }
+                </div>
+                <div class="course-widget-body">
+                    <h3 class="course-name">@Model.Title</h3>
+                    <p class="course-description">@Model.Description</p>
+                    <p class="course-instructor">@Model.InstructorName</p>
+                    <div class="course-rating">
+                        <span class="rating-score">@Model.Rating</span>
+                        <span class="rating-stars">★★★★★</span>
+                        <span class="rating-count">(@Model.ReviewCount)</span>
+                    </div>
+                    <div class="course-meta">
+                        <span class="course-meta-item">@Model.LectureCount lectures</span>
+                        <span class="course-meta-item">@hours total hours</span>
+                        <span class="course-meta-item">@Model.Level</span>
+                    </div>
+                    <div class="course-price-and-button">
+                        <div class="course-price">
+                            <span class="price-current">₹@Model.Price.ToString("N0")</span>
+                            <span class="price-original">₹@Model.OriginalPrice.ToString("N0")</span>
+                        </div>
+                        <button class="course-btn">Add to cart</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- COURSE CONTENT -->
+<section class="course-content">
+    <div class="course-content-inner">
+        <div class="course-content-left">
+            <!-- What you'll learn -->
+            <div class="course-section">
+                <h2 class="course-section-title">What you'll learn</h2>
+                <div class="course-learn-grid">
+                    @if (!string.IsNullOrEmpty(Model.WhatYoullLearn))
+                    {
+                        var learnItems = Model.WhatYoullLearn.Split(',');
+                        foreach (var item in learnItems)
+                        {
+                            <div class="course-learn-item">
+                                <span class="learn-icon">✓</span>
+                                <span>@item.Trim()</span>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <!-- Course Content -->
+            <div class="course-section">
+                <h2 class="course-section-title">Course content</h2>
+                <div class="course-content-summary">
+                    <span class="summary-stats">
+                        @(Model.Modules?.Count ?? 0) sections • 
+                        @(Model.Modules?.Sum(m => m.Lessons?.Count ?? 0) ?? 0) lectures • 
+                        @(Model.DurationMinutes / 60)h @(Model.DurationMinutes % 60)m total length
+                    </span>
+                    <button class="expand-all-btn">Expand all sections</button>
+                </div>
+                <div class="course-modules">
+                    @if (Model.Modules != null && Model.Modules.Count > 0)
+                    {
+                        @foreach (var module in Model.Modules)
+                        {
+                            var lessonCount = module.Lessons?.Count ?? 0;
+                            var moduleDuration = $"{module.DurationMinutes / 60}hr {module.DurationMinutes % 60}min";
+                            <div class="course-module">
+                                <div class="module-header">
+                                    <span class="module-toggle">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M7 10L12 15L17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </span>
+                                    <h3 class="module-title">@module.Title</h3>
+                                    <span class="module-meta">@(lessonCount) lectures • @moduleDuration</span>
+                                </div>
+                                <div class="module-lessons">
+                                    @if (module.Lessons != null)
+                                    {
+                                        @foreach (var lesson in module.Lessons)
+                                        {
+                                            <div class="module-lesson">
+                                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="lesson-icon">
+                                                    <path d="M3 5C3 3.89543 3.89543 3 5 3H15C16.1046 3 17 3.89543 17 5V15C17 16.1046 16.1046 17 15 17H5C3.89543 17 3 16.1046 3 15V5Z" stroke="currentColor" stroke-width="1.5"/>
+                                                    <path d="M7.5 7.5L12.5 10L7.5 12.5V7.5Z" fill="currentColor"/>
+                                                </svg>
+                                                <span class="lesson-title">@lesson.Title</span>
+                                                @if (lesson.IsPreview)
+                                                {
+                                                    <span class="lesson-preview">Preview</span>
+                                                }
+                                                <span class="lesson-duration">@((lesson.DurationSeconds / 60).ToString("00")):@((lesson.DurationSeconds % 60).ToString("00"))</span>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="no-content">No modules available yet.</p>
+                    }
+                </div>
+            </div>
+        </div>
+        
+        <div class="course-content-right">
+            <!-- Requirements -->
+            <div class="course-sidebar-section">
+                <h3 class="sidebar-title">Requirements</h3>
+                <ul class="requirements-list">
+                    @if (!string.IsNullOrEmpty(Model.Requirements))
+                    {
+                        var reqItems = Model.Requirements.Split(',');
+                        foreach (var item in reqItems)
+                        {
+                            <li>@item.Trim()</li>
+                        }
+                    }
+                </ul>
+            </div>
+
+            <!-- Description -->
+            <div class="course-sidebar-section">
+                <h3 class="sidebar-title">Description</h3>
+                <p class="course-description">@Model.Description</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const moduleHeaders = document.querySelectorAll('.module-header');
+            moduleHeaders.forEach(header => {
+                header.addEventListener('click', function() {
+                    const module = this.closest('.course-module');
+                    module.classList.toggle('open');
+                });
+            });
+
+            const expandBtn = document.querySelector('.expand-all-btn');
+            let allOpen = false;
+            if (expandBtn) {
+                expandBtn.addEventListener('click', function() {
+                    allOpen = !allOpen;
+                    const modules = document.querySelectorAll('.course-module');
+                    modules.forEach(mod => {
+                        if (allOpen) mod.classList.add('open');
+                        else mod.classList.remove('open');
+                    });
+                    expandBtn.textContent = allOpen ? "Collapse all sections" : "Expand all sections";
+                });
+            }
+        });
+    </script>
+}

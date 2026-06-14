@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>Acoustican Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #f5a623;
+            --dark: #0a0a0b;
+            --darker: #16161a;
+            --light-text: #ffffff;
+            --muted-text: #a0a0a8;
+        }
+
+        * {
+            color-scheme: dark;
+        }
+
+        body {
+            background: var(--dark);
+            color: var(--light-text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .navbar {
+            background: var(--darker) !important;
+            border-bottom: 1px solid #222228;
+        }
+
+        .sidebar {
+            background: var(--darker);
+            border-right: 1px solid #222228;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            overflow-y: auto;
+            padding-top: 60px;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 80px 20px 20px 20px;
+        }
+
+        .nav-link {
+            color: var(--muted-text) !important;
+            border-left: 3px solid transparent;
+            padding-left: 15px;
+            margin-bottom: 5px;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--primary) !important;
+            border-left-color: var(--primary);
+        }
+
+        .card {
+            background: var(--darker);
+            border: 1px solid #222228;
+            color: var(--light-text);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: #e0951a;
+            color: var(--dark);
+        }
+
+        .btn-secondary {
+            background: #32323a;
+            border: 1px solid #44444a;
+            color: var(--light-text);
+        }
+
+        .btn-secondary:hover {
+            background: #40404a;
+            color: var(--light-text);
+            border-color: #55555a;
+        }
+
+        .badge-primary {
+            background: var(--primary);
+            color: var(--dark);
+        }
+
+        .table {
+            background: var(--darker);
+            color: var(--light-text);
+        }
+
+        .table thead {
+            border-bottom: 2px solid #222228;
+        }
+
+        .table tbody tr {
+            border-bottom: 1px solid #222228;
+        }
+
+        .table tbody tr:hover {
+            background: #1a1a20;
+        }
+
+        .form-control,
+        .form-select {
+            background: var(--darker);
+            color: var(--light-text);
+            border: 1px solid #222228;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background: var(--darker);
+            color: var(--light-text);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.2rem rgba(245, 166, 35, 0.25);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .modal-content {
+            background: var(--darker);
+            border: 1px solid #222228;
+            color: var(--light-text);
+        }
+
+        .modal-header, .modal-footer {
+            border-color: #222228;
+        }
+
+        .btn-close {
+            filter: invert(1);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--darker), #1a1a20);
+            border: 1px solid #222228;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--muted-text);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-250px);
+                z-index: 1000;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark fixed-top">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-music"></i> Acoustican Admin
+            </span>
+            <span class="text-muted" id="userDisplay">
+                <i class="fas fa-user-circle"></i> <span id="userName">Admin</span>
+                <button class="btn btn-sm btn-outline-danger ms-2" onclick="logout()">Logout</button>
+            </span>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="nav flex-column nav-pills p-3">
+            <a class="nav-link active" href="#dashboard" onclick="showSection('dashboard')">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </a>
+            <a class="nav-link" href="#courses" onclick="showSection('courses')">
+                <i class="fas fa-book"></i> Courses
+            </a>
+            <a class="nav-link" href="#modules" onclick="showSection('modules')">
+                <i class="fas fa-th-list"></i> Modules
+            </a>
+            <a class="nav-link" href="#testimonials" onclick="showSection('testimonials')">
+                <i class="fas fa-comments"></i> Testimonials
+            </a>
+            <a class="nav-link" href="#pricing" onclick="showSection('pricing')">
+                <i class="fas fa-tags"></i> Pricing
+            </a>
+            <a class="nav-link" href="#hero" onclick="showSection('hero')">
+                <i class="fas fa-heading"></i> Hero Content
+            </a>
+            <a class="nav-link" href="#files" onclick="showSection('files')">
+                <i class="fas fa-file-upload"></i> File Upload
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="section">
+            <h2 class="mb-4">Dashboard</h2>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Courses</div>
+                        <div class="stat-number" id="statCourses">0</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-label">Published Courses</div>
+                        <div class="stat-number" id="statPublished">0</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-label">Testimonials</div>
+                        <div class="stat-number" id="statTestimonials">0</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-label">Pricing Tiers</div>
+                        <div class="stat-number" id="statPricing">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Courses Section -->
+        <div id="courses-section" class="section d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Courses</h2>
+                <button class="btn btn-primary" onclick="showCourseForm()">
+                    <i class="fas fa-plus"></i> Add Course
+                </button>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Level</th>
+                                    <th>Price</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="coursesTable">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Testimonials Section -->
+        <div id="testimonials-section" class="section d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Testimonials</h2>
+                <button class="btn btn-primary" onclick="showTestimonialForm()">
+                    <i class="fas fa-plus"></i> Add Testimonial
+                </button>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Role</th>
+                                    <th>Rating</th>
+                                    <th>Published</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="testimonialsTable">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modules Section -->
+        <div id="modules-section" class="section d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Course Modules</h2>
+                <div class="d-flex gap-2">
+                    <select class="form-select" id="moduleCourseFilter" style="width: 250px;" onchange="loadModules()">
+                        <option value="">Select a Course...</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="showModuleForm()">
+                        <i class="fas fa-plus"></i> Add Module
+                    </button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Title</th>
+                                    <th>Duration</th>
+                                    <th>Order</th>
+                                    <th>Published</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modulesTable">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">Please select a course to view modules.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pricing Section -->
+        <div id="pricing-section" class="section d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Pricing Tiers</h2>
+                <button class="btn btn-primary" onclick="showPricingForm()">
+                    <i class="fas fa-plus"></i> Add Tier
+                </button>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Price</th>
+                                    <th>Period</th>
+                                    <th>Popular</th>
+                                    <th>Published</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pricingTable">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero Section -->
+        <div id="hero-section" class="section d-none">
+            <h2 class="mb-4">Hero Section Management</h2>
+            <div class="card">
+                <div class="card-body">
+                    <form id="heroForm" onsubmit="saveHero(event)">
+                        <input type="hidden" id="heroId">
+                        <div class="mb-3">
+                            <label class="form-label">Main Title</label>
+                            <input type="text" class="form-control" id="heroTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Highlighted Subtitle</label>
+                            <input type="text" class="form-control" id="heroSubtitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="heroDescription" rows="3" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Background Video URL</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="heroVideoUrl">
+                                    <input type="file" id="heroVideoFile" class="d-none" accept="video/*">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('heroVideoFile').click()">
+                                        <i class="fas fa-upload"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Background Image URL</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="heroImageUrl">
+                                    <input type="file" id="heroImageFile" class="d-none" accept="image/*">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('heroImageFile').click()">
+                                        <i class="fas fa-upload"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Primary Button Text</label>
+                                <input type="text" class="form-control" id="heroPrimaryBtn">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Secondary Button Text</label>
+                                <input type="text" class="form-control" id="heroSecondaryBtn">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Hero Content</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Upload Section -->
+        <div id="files-section" class="section d-none">
+            <h2 class="mb-4">File Upload</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Upload Image</h5>
+                        </div>
+                        <div class="card-body">
+                            <input type="file" id="imageFile" class="form-control mb-3" accept="image/*">
+                            <button class="btn btn-primary w-100" onclick="uploadImage()">
+                                <i class="fas fa-upload"></i> Upload
+                            </button>
+                            <div id="imageResponse" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Upload Video</h5>
+                        </div>
+                        <div class="card-body">
+                            <input type="file" id="videoFile" class="form-control mb-3" accept="video/*">
+                            <button class="btn btn-primary w-100" onclick="uploadVideo()">
+                                <i class="fas fa-upload"></i> Upload
+                            </button>
+                            <div id="videoResponse" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Modal -->
+    <div class="modal fade" id="courseModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="courseModalTitle">Add Course</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="courseForm">
+                        <input type="hidden" id="courseId">
+                        <div class="mb-3">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-control" id="courseTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Thumbnail URL or Video URL</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="courseThumbnailUrl" placeholder="https://... or /uploads/...">
+                                <input type="file" id="courseThumbnailFile" class="d-none" accept="image/*,video/*">
+                                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('courseThumbnailFile').click()">
+                                    <i class="fas fa-upload"></i> Upload
+                                </button>
+                            </div>
+                            <small class="text-muted">You can enter a URL directly or upload a file.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="courseDescription" rows="3" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Level</label>
+                                <select class="form-select" id="courseLevel">
+                                    <option value="Beginner">Beginner</option>
+                                    <option value="Intermediate">Intermediate</option>
+                                    <option value="Advanced">Advanced</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Price ($)</label>
+                                <input type="number" class="form-control" id="coursePrice" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Duration (Minutes)</label>
+                                <input type="number" class="form-control" id="courseDuration" required>
+                            </div>
+                            <div class="col-md-6 mb-3 d-flex align-items-end">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="coursePublished">
+                                    <label class="form-check-label">Published</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCourse()">Save Course</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Module Modal -->
+    <div class="modal fade" id="moduleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="moduleModalTitle">Add Module</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="moduleForm">
+                        <input type="hidden" id="moduleId">
+                        <div class="mb-3">
+                            <label class="form-label">Course</label>
+                            <select class="form-select" id="moduleCourseId" required></select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Module Number</label>
+                                <input type="number" class="form-control" id="moduleNumber" required>
+                            </div>
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">Title</label>
+                                <input type="text" class="form-control" id="moduleTitle" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="moduleDescription" rows="3" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Duration (Min)</label>
+                                <input type="number" class="form-control" id="moduleDuration" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Display Order</label>
+                                <input type="number" class="form-control" id="moduleOrder" value="0">
+                            </div>
+                            <div class="col-md-4 mb-3 d-flex align-items-end">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="modulePublished">
+                                    <label class="form-check-label">Published</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveModule()">Save Module</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing Modal -->
+    <div class="modal fade" id="pricingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="pricingModalTitle">Add Pricing Tier</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="pricingForm">
+                        <input type="hidden" id="pricingId">
+                        <div class="mb-3">
+                            <label class="form-label">Plan Name</label>
+                            <input type="text" class="form-control" id="pricingName" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Price</label>
+                                <input type="number" class="form-control" id="pricingPrice" step="0.01" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Billing Period</label>
+                                <select class="form-select" id="pricingPeriod">
+                                    <option value="monthly">Monthly</option>
+                                    <option value="annually">Annually</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="pricingDescription" rows="2" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Features (one per line)</label>
+                            <textarea class="form-control" id="pricingFeatures" rows="5" placeholder="Feature 1&#10;Feature 2"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="pricingPopular">
+                                    <label class="form-check-label">Most Popular</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="pricingPublished">
+                                    <label class="form-check-label">Published</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="savePricing()">Save Tier</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Testimonial Modal -->
+    <div class="modal fade" id="testimonialModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="testimonialModalTitle">Add Testimonial</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="testimonialForm">
+                        <input type="hidden" id="testimonialId">
+                        <div class="mb-3">
+                            <label class="form-label">Student Name</label>
+                            <input type="text" class="form-control" id="testimonialName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role/Description</label>
+                            <input type="text" class="form-control" id="testimonialRole" placeholder="e.g. Beginner, Professional Musician" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Profile Image URL</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="testimonialImageUrl" placeholder="https://...">
+                                <input type="file" id="testimonialImageFile" class="d-none" accept="image/*">
+                                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('testimonialImageFile').click()">
+                                    <i class="fas fa-upload"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Rating (1-5)</label>
+                            <select class="form-select" id="testimonialRating">
+                                <option value="5">5 Stars</option>
+                                <option value="4">4 Stars</option>
+                                <option value="3">3 Stars</option>
+                                <option value="2">2 Stars</option>
+                                <option value="1">1 Star</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Testimonial Content</label>
+                            <textarea class="form-control" id="testimonialContent" rows="4" required></textarea>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="testimonialPublished">
+                            <label class="form-check-label">Published</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTestimonial()">Save Testimonial</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_URL = '/api';
+        let token = localStorage.getItem('adminToken');
+
+        // Check if user is logged in
+        if (!token) {
+            // Show login form instead
+            showLoginForm();
+        } else {
+            loadDashboard();
+        }
+
+        function showSection(section) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(s => s.classList.add('d-none'));
+            
+            // Show selected section
+            document.getElementById(section + '-section').classList.remove('d-none');
+            
+            // Update nav links
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            if (event) event.target.closest('.nav-link').classList.add('active');
+
+            // Load data
+            if (section === 'courses') loadCourses();
+            if (section === 'modules') populateCourseDropdowns();
+            if (section === 'testimonials') loadTestimonials();
+            if (section === 'pricing') loadPricing();
+            if (section === 'hero') loadHero();
+        }
+
+        async function loadDashboard() {
+            try {
+                const courses = await fetch(API_URL + '/courses', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(r => r.json());
+                
+                const testimonials = await fetch(API_URL + '/testimonials', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(r => r.json());
+                
+                const pricing = await fetch(API_URL + '/pricing', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(r => r.json());
+
+                document.getElementById('statCourses').textContent = courses.length;
+                document.getElementById('statPublished').textContent = courses.filter(c => c.isPublished).length;
+                document.getElementById('statTestimonials').textContent = testimonials.length;
+                document.getElementById('statPricing').textContent = pricing.length;
+            } catch (err) {
+                console.error('Error loading dashboard:', err);
+            }
+        }
+
+        async function loadHero() {
+            try {
+                const hero = await fetch(`${API_URL}/hero`).then(r => r.json());
+                document.getElementById('heroId').value = hero.id;
+                document.getElementById('heroTitle').value = hero.title;
+                document.getElementById('heroSubtitle').value = hero.subtitle;
+                document.getElementById('heroDescription').value = hero.description;
+                document.getElementById('heroVideoUrl').value = hero.backgroundVideoUrl || '';
+                document.getElementById('heroImageUrl').value = hero.backgroundImageUrl || '';
+                document.getElementById('heroPrimaryBtn').value = hero.primaryButtonText;
+                document.getElementById('heroSecondaryBtn').value = hero.secondaryButtonText;
+
+                // Setup auto-upload for hero files
+                document.getElementById('heroVideoFile').onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    const response = await fetch(`${API_URL}/files/upload-video`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    }).then(r => r.json());
+                    if (response.success) document.getElementById('heroVideoUrl').value = response.filePath;
+                };
+
+                document.getElementById('heroImageFile').onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    const response = await fetch(`${API_URL}/files/upload-image`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    }).then(r => r.json());
+                    if (response.success) document.getElementById('heroImageUrl').value = response.filePath;
+                };
+            } catch (err) {
+                console.error('Error loading hero content:', err);
+            }
+        }
+
+        async function saveHero(event) {
+            event.preventDefault();
+            const heroData = {
+                id: parseInt(document.getElementById('heroId').value),
+                title: document.getElementById('heroTitle').value,
+                subtitle: document.getElementById('heroSubtitle').value,
+                description: document.getElementById('heroDescription').value,
+                backgroundVideoUrl: document.getElementById('heroVideoUrl').value,
+                backgroundImageUrl: document.getElementById('heroImageUrl').value,
+                primaryButtonText: document.getElementById('heroPrimaryBtn').value,
+                secondaryButtonText: document.getElementById('heroSecondaryBtn').value,
+                isActive: true
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/hero`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(heroData)
+                });
+
+                if (response.ok) {
+                    alert('Hero content updated successfully!');
+                } else {
+                    alert('Error updating hero content');
+                }
+            } catch (err) {
+                console.error('Error saving hero:', err);
+            }
+        }
+
+        async function loadCourses() {
+            try {
+                const courses = await fetch(API_URL + '/courses', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(r => r.json());
+
+                const table = document.getElementById('coursesTable');
+                table.innerHTML = courses.map(c => `
+                    <tr>
+                        <td>${c.title}</td>
+                        <td><span class="badge bg-info">${c.level}</span></td>
+                        <td>$${c.price}</td>
+                        <td>${c.durationMinutes} min</td>
+                        <td>${c.isPublished ? '<span class="badge bg-success">Published</span>' : '<span class="badge bg-secondary">Draft</span>'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editCourse(${c.id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCourse(${c.id})">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading courses:', err);
+            }
+        }
+
+        async function loadTestimonials() {
+            try {
+                const testimonials = await fetch(API_URL + '/testimonials', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(r => r.json());
+
+                const table = document.getElementById('testimonialsTable');
+                table.innerHTML = testimonials.map(t => `
+                    <tr>
+                        <td>${t.studentName}</td>
+                        <td>${t.studentRole}</td>
+                        <td>
+                            <span class="badge bg-warning">
+                                <i class="fas fa-star"></i> ${t.rating}/5
+                            </span>
+                        </td>
+                        <td>${t.isPublished ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editTestimonial(${t.id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteTestimonial(${t.id})">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading testimonials:', err);
+            }
+        }
+
+        async function loadPricing() {
+            try {
+                const tiers = await fetch(API_URL + '/pricing', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(r => r.json());
+
+                const table = document.getElementById('pricingTable');
+                table.innerHTML = tiers.map(t => `
+                    <tr>
+                        <td>${t.name}</td>
+                        <td>$${t.price}</td>
+                        <td>${t.billingPeriod}</td>
+                        <td>${t.isPopular ? '<span class="badge bg-warning">Yes</span>' : 'No'}</td>
+                        <td>${t.isPublished ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editPricing(${t.id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deletePricing(${t.id})">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading pricing:', err);
+            }
+        }
+
+        async function uploadImage() {
+            const file = document.getElementById('imageFile').files[0];
+            if (!file) return alert('Please select a file');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(API_URL + '/files/upload-image', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                }).then(r => r.json());
+
+                const div = document.getElementById('imageResponse');
+                if (response.success) {
+                    div.innerHTML = `<div class="alert alert-success">File uploaded: ${response.filePath}</div>`;
+                } else {
+                    div.innerHTML = `<div class="alert alert-danger">${response.message}</div>`;
+                }
+            } catch (err) {
+                console.error('Error uploading:', err);
+            }
+        }
+
+        async function uploadVideo() {
+            const file = document.getElementById('videoFile').files[0];
+            if (!file) return alert('Please select a file');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(API_URL + '/files/upload-video', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                }).then(r => r.json());
+
+                const div = document.getElementById('videoResponse');
+                if (response.success) {
+                    div.innerHTML = `<div class="alert alert-success">File uploaded: ${response.filePath}</div>`;
+                } else {
+                    div.innerHTML = `<div class="alert alert-danger">${response.message}</div>`;
+                }
+            } catch (err) {
+                console.error('Error uploading:', err);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('adminToken');
+            location.reload();
+        }
+
+        function showLoginForm() {
+            document.body.innerHTML = `
+                <div class="container d-flex justify-content-center align-items-center" style="height: 100vh;">
+                    <div class="card" style="width: 100%; max-width: 400px;">
+                        <div class="card-body p-5">
+                            <h2 class="text-center mb-4">Acoustican Admin</h2>
+                            <form onsubmit="handleLogin(event)">
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="loginEmail" required>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="loginPassword" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 mb-3">
+                                    <i class="fas fa-sign-in-alt"></i> Login
+                                </button>
+
+                                <div class="text-end mb-2" style="padding: 0 10px;">
+                                    <a href="/forgot-password" class="text-decoration-none" style="color: var(--primary); font-size: 0.9rem;">
+                                        Forgot password?
+                                    </a>
+                                </div>
+
+                                <div class="text-center mt-3">
+                                    <a href="/" class="btn btn-link text-primary text-decoration-none">
+                                        <i class="fas fa-arrow-left"></i> Back to Home Page
+                                    </a>
+                                </div>
+                            </form>
+                            <div id="loginError" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch(API_URL + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                }).then(r => r.json());
+
+                if (response.success) {
+                    localStorage.setItem('adminToken', response.token);
+                    location.reload();
+                } else {
+                    document.getElementById('loginError').innerHTML = `<div class="alert alert-danger">${response.message}</div>`;
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+            }
+        }
+
+        // Course Operations
+        let courseModal;
+
+        function showCourseForm(course = null) {
+            if (!courseModal) courseModal = new bootstrap.Modal(document.getElementById('courseModal'));
+            
+            const form = document.getElementById('courseForm');
+            form.reset();
+            
+            // Handle file upload preview/selection
+            document.getElementById('courseThumbnailFile').onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const endpoint = file.type.startsWith('video/') ? '/files/upload-video' : '/files/upload-image';
+                
+                try {
+                    const response = await fetch(`${API_URL}${endpoint}`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    }).then(r => r.json());
+
+                    if (response.success) {
+                        document.getElementById('courseThumbnailUrl').value = response.filePath;
+                    } else {
+                        alert('Upload failed: ' + response.message);
+                    }
+                } catch (err) {
+                    console.error('Upload error:', err);
+                    alert('Upload error');
+                }
+            };
+            
+            if (course) {
+                document.getElementById('courseModalTitle').textContent = 'Edit Course';
+                document.getElementById('courseId').value = course.id;
+                document.getElementById('courseTitle').value = course.title;
+                document.getElementById('courseThumbnailUrl').value = course.thumbnailUrl || '';
+                document.getElementById('courseDescription').value = course.description;
+                document.getElementById('courseLevel').value = course.level;
+                document.getElementById('coursePrice').value = course.price;
+                document.getElementById('courseDuration').value = course.durationMinutes;
+                document.getElementById('coursePublished').checked = course.isPublished;
+            } else {
+                document.getElementById('courseModalTitle').textContent = 'Add Course';
+                document.getElementById('courseId').value = '';
+            }
+            
+            courseModal.show();
+        }
+
+        // Module Operations
+        let moduleModal;
+
+        async function populateCourseDropdowns() {
+            try {
+                const courses = await fetch(API_URL + '/courses').then(r => r.json());
+                const filter = document.getElementById('moduleCourseFilter');
+                const modalSelect = document.getElementById('moduleCourseId');
+                
+                const options = courses.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+                
+                filter.innerHTML = '<option value="">Select a Course...</option>' + options;
+                modalSelect.innerHTML = '<option value="">Select a Course...</option>' + options;
+                
+                loadModules();
+            } catch (err) {
+                console.error('Error populating course dropdowns:', err);
+            }
+        }
+
+        async function loadModules() {
+            const courseId = document.getElementById('moduleCourseFilter').value;
+            const table = document.getElementById('modulesTable');
+            
+            if (!courseId) {
+                table.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Please select a course to view modules.</td></tr>';
+                return;
+            }
+
+            try {
+                const modules = await fetch(`${API_URL}/coursemodules/course/${courseId}`).then(r => r.json());
+                
+                if (modules.length === 0) {
+                    table.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No modules found for this course.</td></tr>';
+                    return;
+                }
+
+                table.innerHTML = modules.map(m => `
+                    <tr>
+                        <td>${m.moduleNumber}</td>
+                        <td>${m.title}</td>
+                        <td>${m.durationMinutes} min</td>
+                        <td>${m.displayOrder}</td>
+                        <td>${m.isPublished ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editModule(${m.id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteModule(${m.id})">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading modules:', err);
+            }
+        }
+
+        function showModuleForm(module = null) {
+            if (!moduleModal) moduleModal = new bootstrap.Modal(document.getElementById('moduleModal'));
+            
+            const form = document.getElementById('moduleForm');
+            form.reset();
+            
+            if (module) {
+                document.getElementById('moduleModalTitle').textContent = 'Edit Module';
+                document.getElementById('moduleId').value = module.id;
+                document.getElementById('moduleCourseId').value = module.courseId;
+                document.getElementById('moduleNumber').value = module.moduleNumber;
+                document.getElementById('moduleTitle').value = module.title;
+                document.getElementById('moduleDescription').value = module.description;
+                document.getElementById('moduleDuration').value = module.durationMinutes;
+                document.getElementById('moduleOrder').value = module.displayOrder;
+                document.getElementById('modulePublished').checked = module.isPublished;
+            } else {
+                document.getElementById('moduleModalTitle').textContent = 'Add Module';
+                document.getElementById('moduleId').value = '';
+                // Pre-select course from filter if available
+                const filterVal = document.getElementById('moduleCourseFilter').value;
+                if (filterVal) document.getElementById('moduleCourseId').value = filterVal;
+            }
+            
+            moduleModal.show();
+        }
+
+        async function saveModule() {
+            const id = document.getElementById('moduleId').value;
+            const courseIdVal = document.getElementById('moduleCourseId').value;
+            if (!courseIdVal) return alert('Please select a course');
+
+            const moduleData = {
+                courseId: parseInt(courseIdVal),
+                moduleNumber: parseInt(document.getElementById('moduleNumber').value),
+                title: document.getElementById('moduleTitle').value,
+                description: document.getElementById('moduleDescription').value,
+                durationMinutes: parseInt(document.getElementById('moduleDuration').value),
+                displayOrder: parseInt(document.getElementById('moduleOrder').value),
+                isPublished: document.getElementById('modulePublished').checked
+            };
+
+            const url = id ? `${API_URL}/coursemodules/${id}` : `${API_URL}/coursemodules`;
+            const method = id ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(moduleData)
+                });
+
+                if (response.ok) {
+                    moduleModal.hide();
+                    loadModules();
+                } else {
+                    const err = await response.json();
+                    alert('Error saving module: ' + (err.message || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error('Error saving module:', err);
+            }
+        }
+
+        async function editModule(id) {
+            try {
+                const module = await fetch(`${API_URL}/coursemodules/${id}`).then(r => r.json());
+                showModuleForm(module);
+            } catch (err) {
+                console.error('Error fetching module details:', err);
+            }
+        }
+
+        async function deleteModule(id) {
+            if (!confirm('Are you sure you want to delete this module?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/coursemodules/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    loadModules();
+                } else {
+                    alert('Error deleting module');
+                }
+            } catch (err) {
+                console.error('Error deleting module:', err);
+            }
+        }
+
+        async function saveCourse() {
+            const id = document.getElementById('courseId').value;
+            const courseData = {
+                title: document.getElementById('courseTitle').value,
+                description: document.getElementById('courseDescription').value,
+                thumbnailUrl: document.getElementById('courseThumbnailUrl').value,
+                level: document.getElementById('courseLevel').value,
+                price: parseFloat(document.getElementById('coursePrice').value),
+                durationMinutes: parseInt(document.getElementById('courseDuration').value),
+                isPublished: document.getElementById('coursePublished').checked
+            };
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_URL}/courses/${id}` : `${API_URL}/courses`;
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(courseData)
+                });
+
+                if (response.ok) {
+                    courseModal.hide();
+                    loadCourses();
+                    loadDashboard();
+                } else {
+                    const err = await response.json();
+                    alert('Error saving course: ' + (err.message || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error('Error saving course:', err);
+                alert('Error saving course');
+            }
+        }
+
+        async function editCourse(id) {
+            try {
+                const course = await fetch(`${API_URL}/courses/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(r => r.json());
+                showCourseForm(course);
+            } catch (err) {
+                console.error('Error fetching course:', err);
+            }
+        }
+
+        async function deleteCourse(id) {
+            if (!confirm('Are you sure you want to delete this course?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/courses/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    loadCourses();
+                    loadDashboard();
+                } else {
+                    alert('Error deleting course');
+                }
+            } catch (err) {
+                console.error('Error deleting course:', err);
+            }
+        }
+
+        // Testimonial Operations
+        let testimonialModal;
+
+        function showTestimonialForm(testimonial = null) {
+            if (!testimonialModal) testimonialModal = new bootstrap.Modal(document.getElementById('testimonialModal'));
+            
+            const form = document.getElementById('testimonialForm');
+            form.reset();
+
+            // Handle file upload
+            document.getElementById('testimonialImageFile').onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const formData = new FormData();
+                formData.append('file', file);
+                const response = await fetch(`${API_URL}/files/upload-image`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                }).then(r => r.json());
+                if (response.success) document.getElementById('testimonialImageUrl').value = response.filePath;
+            };
+            
+            if (testimonial) {
+                document.getElementById('testimonialModalTitle').textContent = 'Edit Testimonial';
+                document.getElementById('testimonialId').value = testimonial.id;
+                document.getElementById('testimonialName').value = testimonial.studentName;
+                document.getElementById('testimonialRole').value = testimonial.studentRole;
+                document.getElementById('testimonialImageUrl').value = testimonial.studentImageUrl || '';
+                document.getElementById('testimonialRating').value = testimonial.rating;
+                document.getElementById('testimonialContent').value = testimonial.content;
+                document.getElementById('testimonialPublished').checked = testimonial.isPublished;
+            } else {
+                document.getElementById('testimonialModalTitle').textContent = 'Add Testimonial';
+                document.getElementById('testimonialId').value = '';
+            }
+            
+            testimonialModal.show();
+        }
+
+        async function saveTestimonial() {
+            const id = document.getElementById('testimonialId').value;
+            const data = {
+                studentName: document.getElementById('testimonialName').value,
+                studentRole: document.getElementById('testimonialRole').value,
+                studentImageUrl: document.getElementById('testimonialImageUrl').value,
+                rating: parseInt(document.getElementById('testimonialRating').value),
+                content: document.getElementById('testimonialContent').value,
+                isPublished: document.getElementById('testimonialPublished').checked,
+                displayOrder: 0
+            };
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_URL}/testimonials/${id}` : `${API_URL}/testimonials`;
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    testimonialModal.hide();
+                    loadTestimonials();
+                    loadDashboard();
+                } else {
+                    alert('Error saving testimonial');
+                }
+            } catch (err) {
+                console.error('Error saving testimonial:', err);
+            }
+        }
+
+        async function editTestimonial(id) {
+            try {
+                const testimonial = await fetch(`${API_URL}/testimonials/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(r => r.json());
+                showTestimonialForm(testimonial);
+            } catch (err) {
+                console.error('Error fetching testimonial:', err);
+            }
+        }
+
+        async function deleteTestimonial(id) {
+            if (!confirm('Are you sure?')) return;
+            try {
+                const response = await fetch(`${API_URL}/testimonials/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    loadTestimonials();
+                    loadDashboard();
+                }
+            } catch (err) {
+                console.error('Error deleting testimonial:', err);
+            }
+        }
+
+        // Pricing Operations
+        let pricingModal;
+
+        function showPricingForm(tier = null) {
+            if (!pricingModal) pricingModal = new bootstrap.Modal(document.getElementById('pricingModal'));
+            
+            const form = document.getElementById('pricingForm');
+            form.reset();
+            
+            if (tier) {
+                document.getElementById('pricingModalTitle').textContent = 'Edit Pricing Tier';
+                document.getElementById('pricingId').value = tier.id;
+                document.getElementById('pricingName').value = tier.name;
+                document.getElementById('pricingPrice').value = tier.price;
+                document.getElementById('pricingPeriod').value = tier.billingPeriod;
+                document.getElementById('pricingDescription').value = tier.description;
+                document.getElementById('pricingPopular').checked = tier.isPopular;
+                document.getElementById('pricingPublished').checked = tier.isPublished;
+                
+                const features = tier.features.map(f => f.feature).join('\n');
+                document.getElementById('pricingFeatures').value = features;
+            } else {
+                document.getElementById('pricingModalTitle').textContent = 'Add Pricing Tier';
+                document.getElementById('pricingId').value = '';
+            }
+            
+            pricingModal.show();
+        }
+
+        async function savePricing() {
+            const id = document.getElementById('pricingId').value;
+            const pricingData = {
+                name: document.getElementById('pricingName').value,
+                price: parseFloat(document.getElementById('pricingPrice').value),
+                billingPeriod: document.getElementById('pricingPeriod').value,
+                description: document.getElementById('pricingDescription').value,
+                isPopular: document.getElementById('pricingPopular').checked,
+                isPublished: document.getElementById('pricingPublished').checked,
+                features: document.getElementById('pricingFeatures').value.split('\n').filter(f => f.trim() !== '')
+            };
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_URL}/pricing/${id}` : `${API_URL}/pricing`;
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(pricingData)
+                });
+
+                if (response.ok) {
+                    pricingModal.hide();
+                    loadPricing();
+                    loadDashboard();
+                } else {
+                    const err = await response.json();
+                    alert('Error saving pricing: ' + (err.message || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error('Error saving pricing:', err);
+                alert('Error saving pricing');
+            }
+        }
+
+        async function editPricing(id) {
+            try {
+                const tier = await fetch(`${API_URL}/pricing/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(r => r.json());
+                showPricingForm(tier);
+            } catch (err) {
+                console.error('Error fetching pricing:', err);
+            }
+        }
+
+        async function deletePricing(id) {
+            if (!confirm('Are you sure you want to delete this pricing tier?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/pricing/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    loadPricing();
+                    loadDashboard();
+                } else {
+                    alert('Error deleting pricing tier');
+                }
+            } catch (err) {
+                console.error('Error deleting pricing tier:', err);
+            }
+        }
+    </script>
+</body>
+</html>

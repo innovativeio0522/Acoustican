@@ -1,0 +1,378 @@
+@model HomeViewModel
+@{
+    ViewData["Title"] = "Learn Guitar From Beginner to Pro";
+}
+
+<!-- HERO SECTION -->
+<section class="hero">
+    @if (Model.Hero?.BackgroundVideoUrl != null)
+    {
+        <video class="hero-bg-video" autoplay muted loop playsinline>
+            <source src="@Model.Hero.BackgroundVideoUrl" type="video/mp4">
+        </video>
+    }
+    else
+    {
+        <video class="hero-bg-video" autoplay muted loop playsinline>
+            <source src="/videos/5467-184226823_medium.mp4" type="video/mp4">
+        </video>
+    }
+    <div class="hero-video-overlay"></div>
+    <div class="hero-container">
+        <div class="hero-content">
+            <div class="hero-badge">⭐ Trusted by 10,000+ Students</div>
+            <h1 class="hero-title">@(Model.Hero?.Title ?? "Learn Guitar From") <span>@(Model.Hero?.Subtitle ?? "Beginner to Pro")</span></h1>
+            <p class="hero-desc">@(Model.Hero?.Description ?? "Unlock your musical potential with high-fidelity lessons, cinematic video quality, and an interactive curriculum designed for the modern guitarist.")</p>
+            <div class="hero-buttons">
+                <a href="#courses" class="btn-primary">
+                    @(Model.Hero?.PrimaryButtonText ?? "Start Learning")
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+                <a href="#video" class="btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                    @(Model.Hero?.SecondaryButtonText ?? "Watch Preview")
+                </a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="hero-glow"></div>
+            <!-- Course Module Preview Slider -->
+            <div class="module-preview-widget">
+                <div class="mpw-header">
+                    <div class="mpw-header-left">
+                        <span class="mpw-live-dot"></span>
+                        <span class="mpw-label">Course Modules</span>
+                    </div>
+                    <span class="mpw-count-badge"><span class="mpw-current-num">1</span> / @Model.Courses.Count</span>
+                </div>
+
+                <div class="mpw-track-wrapper">
+                    <div class="mpw-track">
+                        @for (int i = 0; i < Model.Courses.Count; i++)
+                        {
+                            var course = Model.Courses[i];
+                            var hours = course.DurationMinutes / 60;
+                            var mins = course.DurationMinutes % 60;
+                            <div class="mpw-slide @(i == 0 ? "active" : "")">
+                                <div class="mpw-thumb-wrap">
+                                    <img src="@(course.ThumbnailUrl ?? "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600&h=340&fit=crop&q=80")"
+                                         alt="@course.Title" class="mpw-thumb"
+                                         onerror="this.style.background='linear-gradient(135deg,#1a1a20,#0a0a0b)'">
+                                    <div class="mpw-thumb-overlay">
+                                        <button class="mpw-play-btn" aria-label="Play module">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                        </button>
+                                        <span class="mpw-duration">@($"{hours}h {mins:D2}m")</span>
+                                    </div>
+                                </div>
+                                <div class="mpw-info">
+                                    <div class="mpw-module-meta">
+                                        <span class="mpw-module-num">Course @((i + 1).ToString("D2"))</span>
+                                        <span class="mpw-difficulty @course.Level.ToLower()">@course.Level</span>
+                                    </div>
+                                    <h3 class="mpw-title">@course.Title</h3>
+                                    <p class="mpw-desc">@(course.Description.Length > 100 ? course.Description.Substring(0, 100) + "..." : course.Description)</p>
+                                    <div class="mpw-stats">
+                                        <span>📚 @course.ReviewCount reviews</span>
+                                        <span>⏱ @($"{hours}h {mins:D2}m")</span>
+                                        <span>⭐ @course.Rating</span>
+                                    </div>
+                                    <div class="mpw-progress-row">
+                                        <div class="mpw-progress-bar"><div class="mpw-progress-fill" style="width:0%"></div></div>
+                                        <span class="mpw-progress-label">Not started</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div><!-- /.mpw-track -->
+                </div><!-- /.mpw-track-wrapper -->
+
+                <div class="mpw-footer">
+                    <div class="mpw-dots" role="tablist" aria-label="Module navigation"></div>
+                    <div class="mpw-arrows">
+                        <button class="mpw-arrow mpw-prev" aria-label="Previous module">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                        </button>
+                        <button class="mpw-arrow mpw-next" aria-label="Next module">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div><!-- /.module-preview-widget -->
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES STRIP -->
+<section class="features-strip">
+    <div class="features-grid reveal-stagger">
+        <div class="feature-card">
+            <div class="feature-icon">🎬</div>
+            <h3 class="feature-title">HD Video</h3>
+            <p class="feature-desc">Crystal-clear quality recording for every lesson.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3 class="feature-title">Waveform Practice</h3>
+            <p class="feature-desc">Real-time visual feedback on your playing accuracy.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📥</div>
+            <h3 class="feature-title">Download Tabs</h3>
+            <p class="feature-desc">Interactive PDF and GuitarPro files for offline study.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📈</div>
+            <h3 class="feature-title">Progress Track</h3>
+            <p class="feature-desc">Smart dashboards mapping your journey to mastery.</p>
+        </div>
+    </div>
+</section>
+
+<!-- COURSES SECTION -->
+<section class="courses-section" id="courses">
+    <div class="section-header reveal">
+        <div class="section-title-group">
+            <h2>Master Your Sound</h2>
+            <p>Choose from @Model.Courses.Count+ professional modules</p>
+        </div>
+        <a href="/courses" class="view-all">View All Courses →</a>
+    </div>
+    <div class="courses-grid reveal-stagger">
+        @foreach (var course in Model.Courses.Take(3))
+            {
+                var hours = course.DurationMinutes / 60;
+                var mins = course.DurationMinutes % 60;
+                <a href="/courses/@course.Id" class="course-card-link">
+                    <div class="course-card">
+                        <div class="course-image-wrap">
+                            <img src="@(course.ThumbnailUrl ?? "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=500&h=300&fit=crop&q=80")"
+                                 alt="@course.Title" class="course-image" onerror="this.style.display='none'">
+                            @if (course.IsBestseller)
+                            {
+                                <span class="course-badge">Bestseller</span>
+                            }
+                        </div>
+                        <div class="course-body">
+                            <h3 class="course-name">@course.Title</h3>
+                            <p class="course-description">@course.Description</p>
+                            <p class="course-instructor">@course.InstructorName</p>
+                            <div class="course-rating">
+                                <span class="rating-score">@course.Rating</span>
+                                <span class="rating-stars">★★★★★</span>
+                                <span class="rating-count">(@course.ReviewCount)</span>
+                            </div>
+                            <div class="course-meta">
+                                <span class="course-meta-item">@course.LectureCount lectures</span>
+                                <span class="course-meta-item">@hours total hours</span>
+                                <span class="course-meta-item">@course.Level</span>
+                            </div>
+                            <div class="course-price-and-button">
+                                <div class="course-price">
+                                    <span class="price-current">₹@course.Price.ToString("N0")</span>
+                                    <span class="price-original">₹@course.OriginalPrice.ToString("N0")</span>
+                                </div>
+                                <button class="course-btn" onclick="event.stopPropagation()">Add to cart</button>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            }
+    </div>
+</section>
+
+<!-- VIDEO SECTION -->
+<section class="video-section" id="video">
+    <div class="video-wrapper reveal">
+        <img src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1400&h=600&fit=crop&q=80"
+             alt="Studio" class="video-bg" onerror="this.style.display='none'">
+        <div class="video-overlay">
+            <button class="play-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- ROADMAP SECTION -->
+<section class="roadmap-section">
+    <h2 class="roadmap-title reveal">The Road to Mastery</h2>
+    <p class="roadmap-subtitle reveal">A structured path from your first chord to stage-ready performance.</p>
+    <div class="roadmap-grid reveal-stagger">
+        <div class="roadmap-item">
+            <div class="roadmap-icon">🎯</div>
+            <h4>Discovery</h4>
+            <p>Learn basic chords, strumming patterns, and your first melodies.</p>
+        </div>
+        <div class="roadmap-item">
+            <div class="roadmap-icon">⚙️</div>
+            <h4>Technical Foundations</h4>
+            <p>Master picking techniques, scales, arpeggios, and timing.</p>
+        </div>
+        <div class="roadmap-item">
+            <div class="roadmap-icon">🎨</div>
+            <h4>Stylistic Mastery</h4>
+            <p>Dive into Blues, Jazz, Rock, or Metal with specialized tracks.</p>
+        </div>
+        <div class="roadmap-item">
+            <div class="roadmap-icon">⭐</div>
+            <h4>Performance Ready</h4>
+            <p>Learn stage presence, improvisation, and recording skills.</p>
+        </div>
+    </div>
+</section>
+
+
+
+<!-- TESTIMONIALS -->
+<section class="testimonials-section">
+    <div class="testimonials-header reveal">
+        <h2>Hear From Our Students</h2>
+        <p>Thousands of guitarists have transformed their playing with GuitarVerse Academy.</p>
+    </div>
+    <div class="testimonials-slider-container reveal">
+        <div class="testimonials-track">
+            @for (int i = 0; i < Model.Testimonials.Count; i++)
+            {
+                var t = Model.Testimonials[i];
+                <div class="testimonial-card @(i == 0 ? "active" : "")">
+                    <div class="testimonial-header">
+                        <img src="@(t.StudentImageUrl ?? $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(t.StudentName)}&background=f5a623&color=0a0a0b")"
+                             alt="@t.StudentName" class="testimonial-avatar"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="testimonial-info">
+                            <h4>@t.StudentName</h4>
+                            <div class="testimonial-stars">@(new string('★', t.Rating))@(new string('☆', 5 - t.Rating))</div>
+                        </div>
+                    </div>
+                    <p class="testimonial-text">"@t.Content"</p>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="testimonial-nav">
+        <button>←</button>
+        <button>→</button>
+    </div>
+</section>
+
+<!-- ABOUT SECTION -->
+<section class="about-section" id="about">
+    <div class="about-container">
+        <div class="about-content reveal">
+            <div class="about-badge">Our Story</div>
+            <h2 class="about-title">Immersive Guitar Education, <span>Crafted by Masters</span></h2>
+            <p class="about-desc">Founded in 2024, GuitarVerse Academy was born from a simple mission: to bridge the gap between amateur chord strumming and professional stage mastery. We bring together world-class guitarists, cinematic filming quality, and interactive practice tools to deliver a studio-grade learning experience right to your home.</p>
+            <p class="about-desc">Our instructors are seasoned touring professionals, session musicians, and conservatory graduates who don't just teach tabs—they teach you how to feel, write, and command your sound.</p>
+        </div>
+        <div class="about-stats reveal-stagger">
+            <div class="stat-card">
+                <div class="stat-num">10K+</div>
+                <div class="stat-label">Active Students</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num">100+</div>
+                <div class="stat-label">HD Modules</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num">15+</div>
+                <div class="stat-label">Touring Instructors</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num">4.9★</div>
+                <div class="stat-label">Average Rating</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CONTACT SECTION -->
+<section class="contact-section" id="contact">
+    <div class="contact-container">
+        <div class="contact-info reveal">
+            <h2 class="contact-title">Let's Tune In</h2>
+            <p class="contact-desc">Have questions about our curriculum, pricing, or custom coachings? Reach out to our team—we are here to support your musical journey.</p>
+
+            <div class="contact-details">
+                <div class="contact-detail-item">
+                    <div class="detail-icon">📍</div>
+                    <div class="detail-text">
+                        <h4>Studio Headquarters</h4>
+                        <p>Premium Music District, Mumbai, India</p>
+                    </div>
+                </div>
+                <div class="contact-detail-item">
+                    <div class="detail-icon">✉️</div>
+                    <div class="detail-text">
+                        <h4>Support Hub</h4>
+                        <p>support@guitarverse.com</p>
+                    </div>
+                </div>
+                <div class="contact-detail-item">
+                    <div class="detail-icon">📞</div>
+                    <div class="detail-text">
+                        <h4>Direct Line</h4>
+                        <p>+91 99999 88888</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="contact-form-wrapper reveal">
+            <form id="contactForm" class="contact-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contactName">Name</label>
+                        <input type="text" id="contactName" required placeholder="Jimi Hendrix">
+                    </div>
+                    <div class="form-group">
+                        <label for="contactEmail">Email</label>
+                        <input type="email" id="contactEmail" required placeholder="jimi@guitarverse.com">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="contactSubject">Subject</label>
+                    <input type="text" id="contactSubject" required placeholder="How can we help you?">
+                </div>
+                <div class="form-group">
+                    <label for="contactMessage">Message</label>
+                    <textarea id="contactMessage" rows="5" required placeholder="Write your message here..."></textarea>
+                </div>
+                <button type="submit" class="btn-primary contact-submit-btn">
+                    Send Message
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- VIDEO LIGHTBOX MODAL -->
+<div class="video-modal" id="videoModal">
+    <div class="video-modal-backdrop"></div>
+    <div class="video-modal-content">
+        <button class="video-modal-close">✕</button>
+        <div class="video-iframe-container">
+            <video id="previewVideo" controls playsinline
+                   src="@(Model.Hero?.BackgroundVideoUrl ?? "/videos/5467-184226823_medium.mp4")"></video>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.vdoCipherTestVideoId = "@(Model.Hero?.PreviewVideoId)";
+    </script>
+    <script src="/script.js"></script>
+}
