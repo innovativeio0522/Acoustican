@@ -1,0 +1,258 @@
+@{
+    ViewData["Title"] = "Order History";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="/cart.css?v=@DateTime.UtcNow.Ticks">
+}
+
+<!-- PAGE HERO -->
+<section class="cart-hero">
+    <div class="cart-hero-inner">
+        <h1 class="cart-hero-title">Your <span>Orders</span></h1>
+        <p class="cart-hero-desc">Track your enrolled courses, view order summaries, and manage your learning paths.</p>
+    </div>
+</section>
+
+<!-- SUBSCRIPTION CARD -->
+<div class="cart-container" id="subscriptionSection" style="display:none; padding-bottom: 0;">
+    <div class="order-card" style="margin-bottom: 0;">
+        <div class="order-card-header">
+            <div class="order-header-left">
+                <div class="order-header-stat">
+                    <span class="order-stat-label">Active Plan</span>
+                    <span class="order-stat-value" id="subPlanName" style="color: #f5a623;">—</span>
+                </div>
+                <div class="order-header-stat">
+                    <span class="order-stat-label">Price</span>
+                    <span class="order-stat-value total" id="subPlanPrice">—</span>
+                </div>
+                <div class="order-header-stat">
+                    <span class="order-stat-label">Since</span>
+                    <span class="order-stat-value" id="subStartDate">—</span>
+                </div>
+            </div>
+            <div class="order-header-right">
+                <span class="status-badge" style="background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.3);">Active</span>
+                <button class="btn-order-cancel" id="cancelSubBtn">Cancel Plan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN ORDERS CONTENT -->
+<div class="cart-container" id="ordersContainer">
+    <!-- Gated Access (if not logged in) -->
+    <div id="ordersGated" class="cart-empty-state" style="display: none;">
+        <span class="empty-icon">🔒</span>
+        <h2>Access Enrolled Courses</h2>
+        <p>Please log in to your account to view your order history and access your dashboard.</p>
+        <button type="button" class="btn-shop-courses" onclick="window.openAuthModal('login')">
+            Sign In to Account
+        </button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="ordersLoading" style="text-align: center; padding: 60px 0;">
+        <div class="drawer-empty-icon" style="animation: pulse 1.5s infinite; font-size: 3rem;">📋</div>
+        <p style="color: var(--text-muted); margin-top: 16px;">Loading your purchase history...</p>
+    </div>
+
+    <!-- Empty State (hidden by default) -->
+    <div id="ordersEmpty" class="cart-empty-state" style="display: none;">
+        <span class="empty-icon">📋</span>
+        <h2>No Orders Found</h2>
+        <p>You haven't purchased any courses yet. Let's find your first course to get started!</p>
+        <a href="/courses" class="btn-shop-courses">
+            Browse Courses
+        </a>
+    </div>
+
+    <!-- Active Orders List (hidden by default) -->
+    <div id="ordersList" class="orders-layout" style="display: none;">
+        <!-- Dynamic Order Cards here -->
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const gatedEl = document.getElementById('ordersGated');
+            const loadingEl = document.getElementById('ordersLoading');
+            const emptyEl = document.getElementById('ordersEmpty');
+            const listEl = document.getElementById('ordersList');
+
+            async function loadOrders() {
+                gatedEl.style.display = 'none';
+                loadingEl.style.display = 'block';
+                emptyEl.style.display = 'none';
+                listEl.style.display = 'none';
+
+                if (!window.GVCart.isLoggedIn()) {
+                    loadingEl.style.display = 'none';
+                    gatedEl.style.display = 'block';
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/orders', { headers: window.GVCart.authHeaders() });
+                    if (!res.ok) throw new Error();
+                    
+                    const data = await res.json();
+                    const orders = data.orders || [];
+
+                    loadingEl.style.display = 'none';
+
+                    if (orders.length === 0) {
+                        emptyEl.style.display = 'block';
+                        return;
+                    }
+
+                    listEl.style.display = 'flex';
+                    renderOrderCards(orders);
+                } catch {
+                    loadingEl.style.display = 'none';
+                    emptyEl.style.display = 'block';
+                    emptyEl.querySelector('p').textContent = 'Could not load orders. Please verify your connection and try again.';
+                }
+            }
+
+            function renderOrderCards(orders) {
+                listEl.innerHTML = orders.map(order => {
+                    const date = new Date(order.createdAt).toLocaleDateString('en-IN', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+
+                    const isPending = order.status.toLowerCase() === 'pending';
+                    const statusClass = order.status.toLowerCase();
+
+                    return `
+                        <div class="order-card" id="order-${order.id}">
+                            <div class="order-card-header">
+                                <div class="order-header-left">
+                                    <div class="order-header-stat">
+                                        <span class="order-stat-label">Order Placed</span>
+                                        <span class="order-stat-value">${date}</span>
+                                    </div>
+                                    <div class="order-header-stat">
+                                        <span class="order-stat-label">Total Amount</span>
+                                        <span class="order-stat-value total">₹${order.totalAmount.toLocaleString('en-IN')}</span>
+                                    </div>
+                                    <div class="order-header-stat">
+                                        <span class="order-stat-label">Order ID</span>
+                                        <span class="order-stat-value">#GVA-ORD-${order.id}</span>
+                                    </div>
+                                </div>
+                                <div class="order-header-right">
+                                    <span class="status-badge ${statusClass}">${order.status}</span>
+                                    ${isPending ? `<button class="btn-order-cancel" onclick="cancelOrder(${order.id})">Cancel Order</button>` : ''}
+                                </div>
+                            </div>
+                            <div class="order-card-body">
+                                <div class="order-items-list">
+                                    ${order.items.map(item => `
+                                        <div class="order-item-row">
+                                            <img src="${item.courseThumbnailUrl || 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=200&h=120&fit=crop&q=80'}" alt="${item.courseTitle}" class="order-item-thumb">
+                                            <div class="order-item-info">
+                                                <h4 class="order-item-title">${item.courseTitle}</h4>
+                                                <span class="order-item-price">₹${item.price.toLocaleString('en-IN')}</span>
+                                            </div>
+                                            <div class="order-item-actions">
+                                                <a href="/courses/${item.courseId}" class="btn-study-now">Study Now</a>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Expose cancelOrder globally
+            window.cancelOrder = async function(orderId) {
+                if (!confirm('Are you sure you want to cancel this order?')) return;
+
+                const cancelBtn = document.querySelector(`#order-${orderId} .btn-order-cancel`);
+                if (cancelBtn) cancelBtn.disabled = true;
+
+                try {
+                    const res = await fetch(`/api/orders/${orderId}/cancel`, {
+                        method: 'POST',
+                        headers: window.GVCart.authHeaders()
+                    });
+                    const data = await res.json();
+                    
+                    if (res.ok && data.success) {
+                        // Reload order cards
+                        loadOrders();
+                    } else {
+                        alert(data.message || 'Could not cancel order.');
+                        if (cancelBtn) cancelBtn.disabled = false;
+                    }
+                } catch {
+                    alert('An error occurred. Please check your connection.');
+                    if (cancelBtn) cancelBtn.disabled = false;
+                }
+            };
+
+            // ===== SUBSCRIPTION SECTION =====
+            async function loadSubscription() {
+                const headers = window.GVCart.authHeaders();
+                if (!headers['Authorization']) return;
+
+                try {
+                    const res = await fetch('/api/subscriptions/me', { headers });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    const sub = data.subscription;
+                    if (!sub || sub.status !== 'active') return;
+
+                    const section = document.getElementById('subscriptionSection');
+                    const planName = document.getElementById('subPlanName');
+                    const planPrice = document.getElementById('subPlanPrice');
+                    const startDate = document.getElementById('subStartDate');
+
+                    if (planName) planName.textContent = sub.planName || '—';
+                    if (planPrice) planPrice.textContent = sub.planPrice != null ? `₹${sub.planPrice.toLocaleString('en-IN')} / ${sub.billingPeriod || 'month'}` : '—';
+                    if (startDate) startDate.textContent = sub.startDate ? new Date(sub.startDate).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
+                    if (section) section.style.display = 'block';
+                } catch { /* silent */ }
+            }
+
+            const cancelSubBtn = document.getElementById('cancelSubBtn');
+            if (cancelSubBtn) {
+                cancelSubBtn.addEventListener('click', async () => {
+                    if (!confirm('Are you sure you want to cancel your subscription? You will lose access to plan benefits.')) return;
+                    cancelSubBtn.disabled = true;
+                    cancelSubBtn.textContent = 'Cancelling…';
+                    try {
+                        const res = await fetch('/api/subscriptions/me', {
+                            method: 'DELETE',
+                            headers: window.GVCart.authHeaders()
+                        });
+                        if (res.ok) {
+                            document.getElementById('subscriptionSection').style.display = 'none';
+                            alert('Your subscription has been cancelled.');
+                            window.location.reload();
+                        } else {
+                            alert('Failed to cancel subscription. Please try again.');
+                            cancelSubBtn.disabled = false;
+                            cancelSubBtn.textContent = 'Cancel Plan';
+                        }
+                    } catch {
+                        alert('Connection error.');
+                        cancelSubBtn.disabled = false;
+                        cancelSubBtn.textContent = 'Cancel Plan';
+                    }
+                });
+            }
+
+            // Run load on init
+            loadSubscription();
+            loadOrders();
+        });
+    </script>
+}

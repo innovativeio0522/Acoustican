@@ -79,6 +79,10 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IContactService, ContactService>();
 builder.Services.AddScoped<IModuleService, ModuleService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
+builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+
 
 // Add Controllers
 builder.Services.AddControllersWithViews();

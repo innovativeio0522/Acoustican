@@ -67,27 +67,34 @@
 
             if (!messages || messages.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No messages found</td></tr>';
+                if ($.fn.DataTable.isDataTable('#contactMessagesTable')) {
+                    $('#contactMessagesTable').closest('table').DataTable().destroy();
+                }
                 return;
             }
 
             tbody.innerHTML = messages.map(m => `
                 <tr>
-                    <td>${m.name}</td>
-                    <td><a href="mailto:${m.email}">${m.email}</a></td>
+                    <td class="fw-semibold">${m.name}</td>
+                    <td><a href="mailto:${m.email}" class="text-primary text-decoration-none">${m.email}</a></td>
                     <td>${m.subject}</td>
                     <td>${new Date(m.createdAt).toLocaleString()}</td>
                     <td>
-                        <span class="badge ${m.isRead ? 'bg-success' : 'bg-warning text-dark'}">
-                            ${m.isRead ? 'Read' : 'Unread'}
-                        </span>
+                        ${m.isRead 
+                            ? '<span class="badge-pill-custom badge-status-read"><i class="fas fa-check-circle me-1"></i>Read</span>' 
+                            : '<span class="badge-pill-custom badge-status-unread"><i class="fas fa-exclamation-circle me-1"></i>Unread</span>'}
                     </td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="showMessageDetail(${m.id})">
-                            <i class="fas fa-eye"></i> View
+                        <button class="btn-action btn-action-edit" onclick="showMessageDetail(${m.id})" title="View Message">
+                            <i class="fas fa-eye"></i>
                         </button>
                     </td>
                 </tr>
             `).join('');
+            
+            initOrReinitDataTable('#contactMessagesTable', {
+                order: [[3, "desc"]]
+            });
         }
 
         async function showMessageDetail(id) {

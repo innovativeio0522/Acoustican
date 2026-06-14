@@ -1,0 +1,290 @@
+@{
+    ViewData["Title"] = "Shopping Cart";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="/cart.css?v=@DateTime.UtcNow.Ticks">
+}
+
+<!-- PAGE HERO -->
+<section class="cart-hero">
+    <div class="cart-hero-inner">
+        <h1 class="cart-hero-title">Your <span>Cart</span></h1>
+        <p class="cart-hero-desc">Review your selected courses and take the next step in your guitar mastery journey.</p>
+    </div>
+</section>
+
+<!-- MAIN CART CONTENT -->
+<div class="cart-container" id="cartContainer">
+    <!-- Loading State -->
+    <div id="cartLoading" style="text-align: center; padding: 60px 0;">
+        <div class="drawer-empty-icon" style="animation: pulse 1.5s infinite; font-size: 3rem;">🛒</div>
+        <p style="color: var(--text-muted); margin-top: 16px;">Loading your cart items...</p>
+    </div>
+
+    <!-- Empty State (hidden by default) -->
+    <div id="cartEmpty" class="cart-empty-state" style="display: none;">
+        <span class="empty-icon">🎸</span>
+        <h2>Your Cart is Empty</h2>
+        <p>You haven't added any courses to your cart yet. Explore our professional curriculum and find your perfect path.</p>
+        <a href="/courses" class="btn-shop-courses">
+            Browse Courses
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+        </a>
+    </div>
+
+    <!-- Active Cart Layout (hidden by default) -->
+    <div id="cartActive" class="cart-layout" style="display: none;">
+        <!-- Left: Cart Items -->
+        <div class="cart-items-section" id="cartItemsList">
+            <!-- Dynamic Cart Items here -->
+        </div>
+
+        <!-- Right: Checkout Summary -->
+        <aside class="cart-summary-card">
+            <h3 class="summary-title">Order Summary</h3>
+            
+            <div class="summary-row">
+                <span>Selected Courses</span>
+                <span id="summaryCount">0 items</span>
+            </div>
+            <div class="summary-row">
+                <span>Original Price</span>
+                <span id="summaryOriginalTotal">₹0</span>
+            </div>
+            <div class="summary-row discount">
+                <span>Discount Saving</span>
+                <span id="summaryDiscount">₹0</span>
+            </div>
+            
+            <div class="promo-code-wrap">
+                <input type="text" class="promo-input" placeholder="Promo code..." aria-label="Promo code">
+                <button type="button" class="btn-promo-apply">Apply</button>
+            </div>
+
+            <div class="summary-row total">
+                <span>Total Amount</span>
+                <strong id="summaryTotal">₹0</strong>
+            </div>
+
+            <button type="button" class="btn-checkout-submit" id="btnCheckout">
+                Proceed to Checkout
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+            </button>
+
+            <p class="summary-notice">Instant lifetime access • HD video streaming • Downloadable attachments • 30-day money-back guarantee</p>
+        </aside>
+    </div>
+
+    <!-- Success Confirmation State (hidden by default) -->
+    <div id="cartSuccess" class="checkout-success-state" style="display: none;">
+        <span class="success-icon">✓</span>
+        <h2>Enrollment Confirmed!</h2>
+        <p>Congratulations! You have successfully registered for your courses. Start learning right away.</p>
+        
+        <div class="order-details-box">
+            <div class="order-detail-row">
+                <span>Order Reference</span>
+                <strong id="successOrderId">#ORD-0000</strong>
+            </div>
+            <div class="order-detail-row">
+                <span>Amount Paid</span>
+                <strong id="successOrderTotal">₹0</strong>
+            </div>
+            <div class="order-detail-row">
+                <span>Access Status</span>
+                <strong style="color: var(--success);">Instant Lifetime Access</strong>
+            </div>
+        </div>
+
+        <div class="success-actions">
+            <a href="/orders" class="btn-action-primary">View My Orders</a>
+            <a href="/courses" class="btn-action-secondary">Explore More</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loadingEl = document.getElementById('cartLoading');
+            const emptyEl = document.getElementById('cartEmpty');
+            const activeEl = document.getElementById('cartActive');
+            const successEl = document.getElementById('cartSuccess');
+            const itemsListEl = document.getElementById('cartItemsList');
+            
+            const summaryCount = document.getElementById('summaryCount');
+            const summaryOriginalTotal = document.getElementById('summaryOriginalTotal');
+            const summaryDiscount = document.getElementById('summaryDiscount');
+            const summaryTotal = document.getElementById('summaryTotal');
+            const btnCheckout = document.getElementById('btnCheckout');
+
+            // Success View Elements
+            const successOrderId = document.getElementById('successOrderId');
+            const successOrderTotal = document.getElementById('successOrderTotal');
+
+            let cartItems = [];
+
+            // Expose renderCartPage so GVCart can invoke it on removal
+            window.renderCartPage = async function() {
+                loadingEl.style.display = 'block';
+                emptyEl.style.display = 'none';
+                activeEl.style.display = 'none';
+                successEl.style.display = 'none';
+
+                if (window.GVCart.isLoggedIn()) {
+                    try {
+                        const res = await fetch('/api/cart', { headers: window.GVCart.authHeaders() });
+                        if (res.ok) {
+                            const data = await res.json();
+                            // Map DB keys to common schema
+                            cartItems = (data.items || []).map(i => ({
+                                courseId: i.courseId,
+                                title: i.courseTitle,
+                                price: i.coursePrice,
+                                originalPrice: i.courseOriginalPrice,
+                                thumbnailUrl: i.courseThumbnailUrl,
+                                level: i.courseLevel,
+                                instructor: i.instructorName
+                            }));
+                        } else {
+                            cartItems = [];
+                        }
+                    } catch {
+                        cartItems = [];
+                    }
+                } else {
+                    const guest = window.GVCart.getGuestCart();
+                    cartItems = guest.map(g => ({
+                        courseId: g.courseId,
+                        title: g.courseTitle,
+                        price: g.coursePrice,
+                        originalPrice: g.courseOriginalPrice,
+                        thumbnailUrl: g.courseThumbnail,
+                        level: g.courseLevel,
+                        instructor: g.instructorName
+                    }));
+                }
+
+                loadingEl.style.display = 'none';
+
+                if (cartItems.length === 0) {
+                    emptyEl.style.display = 'block';
+                    return;
+                }
+
+                activeEl.style.display = 'grid';
+                
+                // Render List
+                itemsListEl.innerHTML = cartItems.map(item => {
+                    const saved = item.originalPrice - item.price;
+                    return `
+                        <div class="cart-item-card" data-course-id="${item.courseId}">
+                            <div class="cart-item-thumb-wrap">
+                                <img src="${item.thumbnailUrl || 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=400&h=250&fit=crop&q=80'}" alt="${item.title}" class="cart-item-thumb">
+                            </div>
+                            <div class="cart-item-details">
+                                <div>
+                                    <div class="cart-item-header">
+                                        <h3 class="cart-item-title">${item.title}</h3>
+                                        <button class="btn-remove-item" onclick="window.GVCart.removeFromCart(${item.courseId})">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                            Remove
+                                        </button>
+                                    </div>
+                                    <p class="cart-item-instructor">By ${item.instructor || 'Academy Master'}</p>
+                                    <div class="cart-item-meta">
+                                        <span class="cart-meta-tag level">${item.level || 'All Levels'}</span>
+                                        ${saved > 0 ? `<span class="cart-meta-tag" style="color:var(--success);">₹${saved.toLocaleString('en-IN')} Saved</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="cart-item-footer">
+                                    <div class="cart-item-price">
+                                        <span class="price-now">₹${item.price.toLocaleString('en-IN')}</span>
+                                        ${item.originalPrice > item.price ? `<span class="price-was">₹${item.originalPrice.toLocaleString('en-IN')}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Render Summary
+                const total = cartItems.reduce((sum, i) => sum + i.price, 0);
+                const originalTotal = cartItems.reduce((sum, i) => sum + i.originalPrice, 0);
+                const discount = originalTotal - total;
+
+                summaryCount.textContent = `${cartItems.length} course${cartItems.length > 1 ? 's' : ''}`;
+                summaryOriginalTotal.textContent = `₹${originalTotal.toLocaleString('en-IN')}`;
+                summaryDiscount.textContent = `₹${discount.toLocaleString('en-IN')}`;
+                summaryTotal.textContent = `₹${total.toLocaleString('en-IN')}`;
+            };
+
+            // Checkout action
+            btnCheckout.addEventListener('click', async function() {
+                if (!window.GVCart.isLoggedIn()) {
+                    // Force login modal
+                    window.openAuthModal('login');
+                    return;
+                }
+
+                btnCheckout.disabled = true;
+                btnCheckout.innerHTML = `<span style="animation: pulse 1s infinite;">Processing checkout...</span>`;
+
+                try {
+                    const res = await fetch('/api/orders/checkout', {
+                        method: 'POST',
+                        headers: window.GVCart.authHeaders()
+                    });
+                    const data = await res.json();
+                    
+                    if (res.ok && data.success) {
+                        // Clear cart locally if any leftover
+                        window.GVCart.clearGuestCart();
+                        await window.GVCart.refreshBadge();
+                        
+                        // Show success view
+                        successOrderId.textContent = `#GVA-ORD-${data.order.id}`;
+                        successOrderTotal.textContent = `₹${data.order.totalAmount.toLocaleString('en-IN')}`;
+                        
+                        activeEl.style.display = 'none';
+                        successEl.style.display = 'block';
+
+                        // Save purchased course titles to local storage for the CourseDetail "Resume Learning" UI check
+                        const enrolledCourses = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
+                        data.order.items.forEach(item => {
+                            if (!enrolledCourses.includes(item.courseTitle)) {
+                                enrolledCourses.push(item.courseTitle);
+                            }
+                        });
+                        localStorage.setItem('enrolledCourses', JSON.stringify(enrolledCourses));
+                    } else {
+                        alert(data.message || 'Checkout failed. Please try again.');
+                        btnCheckout.disabled = false;
+                        btnCheckout.innerHTML = `Proceed to Checkout <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+                    }
+                } catch {
+                    alert('An error occurred during checkout. Please check your connection.');
+                    btnCheckout.disabled = false;
+                    btnCheckout.innerHTML = `Proceed to Checkout <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+                }
+            });
+
+            // Run initial load
+            window.renderCartPage();
+
+            // Auto-trigger checkout if parameter present and logged in
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('checkout') === 'true' && window.GVCart.isLoggedIn()) {
+                // Let a brief moment pass for DOM setup
+                setTimeout(() => {
+                    btnCheckout.click();
+                }, 400);
+            }
+        });
+    </script>
+}

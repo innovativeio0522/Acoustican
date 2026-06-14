@@ -48,6 +48,19 @@ public class AuthController(IAuthService authService) : ControllerBase
         return Ok(new { success, message, userId = user?.Id });
     }
 
+    [HttpPost("register-user")]
+    [AllowAnonymous]
+    public async Task<IActionResult> RegisterUser([FromBody] CreateAdminUserDto request)
+    {
+        // Force role to "User" for public registrations
+        var (success, message, user) = await authService.RegisterAsync(request.Email, request.Password, request.FullName);
+        if (!success)
+            return BadRequest(new { success, message });
+
+        return Ok(new { success, message, userId = user?.Id });
+    }
+
+
     [HttpPost("forgot-password")]
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
