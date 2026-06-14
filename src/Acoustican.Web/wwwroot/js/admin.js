@@ -19,6 +19,38 @@ function checkAdminAuth() {
     }
 }
 
+// Helper to initialize or reinitialize DataTable on a table element.
+function initOrReinitDataTable(selector, options = {}) {
+    let $el = $(selector);
+    if ($el.is('tbody')) {
+        $el = $el.closest('table');
+    }
+    
+    if ($.fn.DataTable.isDataTable($el)) {
+        $el.DataTable().destroy();
+    }
+    
+    const defaultOptions = {
+        pageLength: 10,
+        lengthMenu: [5, 10, 25, 50],
+        language: {
+            search: "_INPUT_",
+            searchPlaceholder: "Search...",
+            lengthMenu: "Show _MENU_ entries",
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            paginate: {
+                first: '<i class="fas fa-angle-double-left"></i>',
+                last: '<i class="fas fa-angle-double-right"></i>',
+                next: '<i class="fas fa-angle-right"></i>',
+                previous: '<i class="fas fa-angle-left"></i>'
+            }
+        }
+    };
+    
+    const settings = Object.assign({}, defaultOptions, options);
+    return $el.DataTable(settings);
+}
+
 
 // Handle login
 async function handleLogin(event) {
@@ -189,17 +221,26 @@ async function loadCourses() {
         const table = document.getElementById('coursesTable');
         table.innerHTML = courses.map(c => `
             <tr>
-                <td>${c.title}</td>
-                <td><span class="badge bg-info">${c.level}</span></td>
-                <td>$${c.price}</td>
+                <td class="fw-semibold">${c.title}</td>
+                <td><span class="badge-pill-custom badge-level">${c.level}</span></td>
+                <td class="fw-bold">$${c.price}</td>
                 <td>${c.durationMinutes} min</td>
-                <td>${c.isPublished ? '<span class="badge bg-success">Published</span>' : '<span class="badge bg-secondary">Draft</span>'}</td>
                 <td>
-                    <button class="btn btn-sm btn-warning" onclick="editCourse(${c.id})">Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteCourse(${c.id})">Delete</button>
+                    ${c.isPublished 
+                        ? '<span class="badge-pill-custom badge-status-published"><i class="fas fa-check-circle me-1"></i>Published</span>' 
+                        : '<span class="badge-pill-custom badge-status-draft"><i class="fas fa-file-signature me-1"></i>Draft</span>'}
+                </td>
+                <td>
+                    <button class="btn-action btn-action-edit" onclick="editCourse(${c.id})" title="Edit Course">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <button class="btn-action btn-action-delete" onclick="deleteCourse(${c.id})" title="Delete Course">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
                 </td>
             </tr>
         `).join('');
+        initOrReinitDataTable('#coursesTable');
     } catch (err) {
         console.error('Error loading courses:', err);
     }
@@ -380,8 +421,12 @@ async function loadModules() {
     
     if (!courseId) {
         table.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Please select a course to view modules.</td></tr>';
-        document.getElementById('lessonsSection').style.display = 'none';
+        const sec = document.getElementById('lessonsSection');
+        if (sec) sec.style.display = 'none';
         selectedModule = null;
+        if ($.fn.DataTable.isDataTable('#modulesTable')) {
+            $('#modulesTable').closest('table').DataTable().destroy();
+        }
         return;
     }
 
@@ -390,30 +435,45 @@ async function loadModules() {
         
         if (modules.length === 0) {
             table.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No modules found for this course.</td></tr>';
-            document.getElementById('lessonsSection').style.display = 'none';
+            const sec = document.getElementById('lessonsSection');
+            if (sec) sec.style.display = 'none';
             selectedModule = null;
+            if ($.fn.DataTable.isDataTable('#modulesTable')) {
+                $('#modulesTable').closest('table').DataTable().destroy();
+            }
             return;
         }
 
         table.innerHTML = modules.map(m => `
             <tr style="cursor: pointer;" onclick="selectModule(${JSON.stringify(m).replace(/"/g, '&quot;')})" class="${selectedModule?.id === m.id ? 'table-active' : ''}">
-                <td>${m.moduleNumber}</td>
-                <td>${m.title}</td>
+                <td class="fw-semibold">#${m.moduleNumber}</td>
+                <td class="fw-semibold">${m.title}</td>
                 <td>${m.durationMinutes} min</td>
                 <td>${m.displayOrder}</td>
-                <td>${m.isPublished 
-                    ? '<span class="badge bg-success">Published</span>' 
-                    : '<span class="badge bg-secondary">Draft</span>'}</td>
+                <td>
+                    ${m.isPublished 
+                        ? '<span class="badge-pill-custom badge-status-published"><i class="fas fa-check-circle me-1"></i>Published</span>' 
+                        : '<span class="badge-pill-custom badge-status-draft"><i class="fas fa-file-signature me-1"></i>Draft</span>'}
+                </td>
                 <td onclick="event.stopPropagation()">
-                    <button class="btn btn-sm btn-warning" onclick="editModule(${m.id})">Edit</button>
+                    <button class="btn-action btn-action-edit" onclick="editModule(${m.id})" title="Edit Module">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
                     ${m.isPublished
-                        ? `<button class="btn btn-sm btn-outline-secondary" onclick="unpublishModule(${m.id})">Unpublish</button>`
-                        : `<button class="btn btn-sm btn-success" onclick="publishModule(${m.id})">Publish</button>`
+                        ? `<button class="btn-action btn-action-toggle-off" onclick="unpublishModule(${m.id})" title="Unpublish Module">
+                               <i class="fas fa-eye-slash"></i>
+                           </button>`
+                        : `<button class="btn-action btn-action-toggle" onclick="publishModule(${m.id})" title="Publish Module">
+                               <i class="fas fa-eye"></i>
+                           </button>`
                     }
-                    <button class="btn btn-sm btn-danger" onclick="deleteModule(${m.id})">Delete</button>
+                    <button class="btn-action btn-action-delete" onclick="deleteModule(${m.id})" title="Delete Module">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
                 </td>
             </tr>
         `).join('');
+        initOrReinitDataTable('#modulesTable');
     } catch (err) {
         console.error('Error loading modules:', err);
     }
@@ -422,9 +482,20 @@ async function loadModules() {
 // Select a module
 function selectModule(module) {
     selectedModule = module;
-    document.getElementById('selectedModuleTitle').textContent = module.title;
-    document.getElementById('lessonsSection').style.display = 'block';
-    loadModules();
+    const titleEl = document.getElementById('selectedModuleTitle');
+    if (titleEl) titleEl.textContent = module.title;
+    const sec = document.getElementById('lessonsSection');
+    if (sec) sec.style.display = 'block';
+    
+    // Highlight the row visually without reloading DataTable
+    $('#modulesTable tr').removeClass('table-active');
+    $('#modulesTable tr').each(function() {
+        const onclickAttr = $(this).attr('onclick');
+        if (onclickAttr && (onclickAttr.includes(`"id":${module.id},`) || onclickAttr.includes(`"id":${module.id}}`))) {
+            $(this).addClass('table-active');
+        }
+    });
+    
     loadLessons();
 }
 
@@ -432,28 +503,45 @@ function selectModule(module) {
 async function loadLessons() {
     if (!selectedModule) return;
     const table = document.getElementById('lessonsTable');
+    if (!table) return;
 
     try {
         const lessons = await fetch(`${API_URL}/lessons/module/${selectedModule.id}`).then(r => r.json());
         
         if (lessons.length === 0) {
             table.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No lessons found for this module.</td></tr>';
+            if ($.fn.DataTable.isDataTable('#lessonsTable')) {
+                $('#lessonsTable').closest('table').DataTable().destroy();
+            }
             return;
         }
 
         table.innerHTML = lessons.map(l => `
             <tr>
-                <td>${l.displayOrder}</td>
-                <td>${l.title}</td>
-                <td>${Math.floor(l.durationSeconds / 60)}:${(l.durationSeconds % 60).toString().padStart(2, '0')}</td>
-                <td>${l.isPreview ? '<span class="badge bg-info">Yes</span>' : 'No'}</td>
-                <td>${l.isPublished ? '<span class="badge bg-success">Yes</span>' : 'No'}</td>
+                <td class="fw-semibold">#${l.displayOrder}</td>
+                <td class="fw-semibold">${l.title}</td>
+                <td>${Math.floor(l.durationSeconds / 60)}:${(l.durationSeconds % 60).toString().padStart(2, '0')} min</td>
                 <td>
-                    <button class="btn btn-sm btn-warning" onclick="editLesson(${l.id})">Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteLesson(${l.id})">Delete</button>
+                    ${l.isPreview 
+                        ? '<span class="badge-pill-custom badge-status-published"><i class="fas fa-play-circle me-1"></i>Yes</span>' 
+                        : '<span class="badge-pill-custom badge-status-draft"><i class="fas fa-lock me-1"></i>No</span>'}
+                </td>
+                <td>
+                    ${l.isPublished 
+                        ? '<span class="badge-pill-custom badge-status-published"><i class="fas fa-check-circle me-1"></i>Yes</span>' 
+                        : '<span class="badge-pill-custom badge-status-draft"><i class="fas fa-file-signature me-1"></i>No</span>'}
+                </td>
+                <td>
+                    <button class="btn-action btn-action-edit" onclick="editLesson(${l.id})" title="Edit Lesson">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <button class="btn-action btn-action-delete" onclick="deleteLesson(${l.id})" title="Delete Lesson">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
                 </td>
             </tr>
         `).join('');
+        initOrReinitDataTable('#lessonsTable');
     } catch (err) {
         console.error('Error loading lessons:', err);
     }
@@ -716,20 +804,29 @@ async function loadTestimonials() {
         const table = document.getElementById('testimonialsTable');
         table.innerHTML = testimonials.map(t => `
             <tr>
-                <td>${t.studentName}</td>
+                <td class="fw-semibold">${t.studentName}</td>
                 <td>${t.studentRole}</td>
                 <td>
-                    <span class="badge bg-warning">
-                        <i class="fas fa-star"></i> ${t.rating}/5
+                    <span class="badge-pill-custom badge-status-popular">
+                        <i class="fas fa-star me-1"></i> ${t.rating}/5
                     </span>
                 </td>
-                <td>${t.isPublished ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
                 <td>
-                    <button class="btn btn-sm btn-warning" onclick="editTestimonial(${t.id})">Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteTestimonial(${t.id})">Delete</button>
+                    ${t.isPublished 
+                        ? '<span class="badge-pill-custom badge-status-published"><i class="fas fa-check-circle me-1"></i>Yes</span>' 
+                        : '<span class="badge-pill-custom badge-status-draft"><i class="fas fa-file-signature me-1"></i>No</span>'}
+                </td>
+                <td>
+                    <button class="btn-action btn-action-edit" onclick="editTestimonial(${t.id})" title="Edit Testimonial">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <button class="btn-action btn-action-delete" onclick="deleteTestimonial(${t.id})" title="Delete Testimonial">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
                 </td>
             </tr>
         `).join('');
+        initOrReinitDataTable('#testimonialsTable');
     } catch (err) {
         console.error('Error loading testimonials:', err);
     }
@@ -854,17 +951,30 @@ async function loadPricing() {
         const table = document.getElementById('pricingTable');
         table.innerHTML = tiers.map(t => `
             <tr>
-                <td>${t.name}</td>
-                <td>$${t.price}</td>
-                <td>${t.billingPeriod}</td>
-                <td>${t.isPopular ? '<span class="badge bg-warning">Yes</span>' : 'No'}</td>
-                <td>${t.isPublished ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
+                <td class="fw-semibold">${t.name}</td>
+                <td class="fw-bold">$${t.price}</td>
+                <td class="text-capitalize">${t.billingPeriod}</td>
                 <td>
-                    <button class="btn btn-sm btn-warning" onclick="editPricing(${t.id})">Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deletePricing(${t.id})">Delete</button>
+                    ${t.isPopular 
+                        ? '<span class="badge-pill-custom badge-status-popular"><i class="fas fa-fire me-1"></i>Yes</span>' 
+                        : '<span class="badge-pill-custom badge-status-draft"><i class="fas fa-minus me-1"></i>No</span>'}
+                </td>
+                <td>
+                    ${t.isPublished 
+                        ? '<span class="badge-pill-custom badge-status-published"><i class="fas fa-check-circle me-1"></i>Yes</span>' 
+                        : '<span class="badge-pill-custom badge-status-draft"><i class="fas fa-file-signature me-1"></i>No</span>'}
+                </td>
+                <td>
+                    <button class="btn-action btn-action-edit" onclick="editPricing(${t.id})" title="Edit Plan">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <button class="btn-action btn-action-delete" onclick="deletePricing(${t.id})" title="Delete Plan">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
                 </td>
             </tr>
         `).join('');
+        initOrReinitDataTable('#pricingTable');
     } catch (err) {
         console.error('Error loading pricing:', err);
     }

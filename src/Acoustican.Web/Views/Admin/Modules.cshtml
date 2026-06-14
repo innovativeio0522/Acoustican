@@ -93,6 +93,95 @@
     </div>
 </div>
 
+<!-- Lessons Section (hidden until a module is selected) -->
+<div class="card mt-4" id="lessonsSection" style="display: none;">
+    <div class="card-header d-flex justify-content-between align-items-center bg-transparent border-0 pt-4 px-4">
+        <h3 class="mb-0">Lessons: <span id="selectedModuleTitle" class="text-primary"></span></h3>
+        <button class="btn btn-primary" onclick="showLessonForm()">
+            <i class="fas fa-plus"></i> Add Lesson
+        </button>
+    </div>
+    <div class="card-body px-4 pb-4">
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Title</th>
+                        <th>Duration</th>
+                        <th>Preview</th>
+                        <th>Published</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="lessonsTable">
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">No lessons loaded.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Lesson Add/Edit Modal -->
+<div class="modal fade" id="lessonModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="lessonModalTitle">Add Lesson</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="lessonForm">
+                    <input type="hidden" id="lessonId">
+                    <input type="hidden" id="lessonModuleId">
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-control" id="lessonTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="lessonDescription" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Duration (Seconds)</label>
+                            <input type="number" class="form-control" id="lessonDuration" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="lessonOrder" value="0" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Video URL</label>
+                        <input type="text" class="form-control" id="lessonVideoUrl" placeholder="https://... or /uploads/...">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="lessonIsPreview">
+                                <label class="form-check-label">Is Preview (Free lesson)</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="lessonPublished">
+                                <label class="form-check-label">Published</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveLesson()">Save Lesson</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', () => {

@@ -70,7 +70,15 @@
                             <span class="price-current">₹@Model.Price.ToString("N0")</span>
                             <span class="price-original">₹@Model.OriginalPrice.ToString("N0")</span>
                         </div>
-                        <button class="course-btn">Add to cart</button>
+                        <button class="course-btn" 
+                                data-cart-action="add" 
+                                data-course-id="@Model.Id" 
+                                data-course-title="@Model.Title" 
+                                data-course-price="@Model.Price" 
+                                data-course-original-price="@Model.OriginalPrice" 
+                                data-course-thumbnail="@(Model.ThumbnailUrl ?? "")" 
+                                data-course-level="@Model.Level" 
+                                data-course-instructor="@Model.InstructorName">Add to cart</button>
                     </div>
                 </div>
             </div>
@@ -187,7 +195,10 @@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const courseTitle = "@Html.Raw(Model.Title)";
+            const ctaButtons = document.querySelectorAll('.course-btn');
             const moduleHeaders = document.querySelectorAll('.module-header');
+
             moduleHeaders.forEach(header => {
                 header.addEventListener('click', function() {
                     const module = this.closest('.course-module');
@@ -208,6 +219,107 @@
                     expandBtn.textContent = allOpen ? "Collapse all sections" : "Expand all sections";
                 });
             }
+
+            // ===== PREMIUM DYNAMIC COURSE ENROLLMENT & LESSON TRACKING =====
+            function checkEnrollment() {
+                const enrolledCourses = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
+                if (enrolledCourses.includes(courseTitle)) {
+                    ctaButtons.forEach(btn => {
+                        btn.textContent = "Resume Learning";
+                        btn.style.background = "#4ade80"; // Green accent for enrolled state
+                        btn.style.color = "#0a0a0b";
+                        btn.style.boxShadow = "0 8px 30px rgba(74, 222, 128, 0.25)";
+                        
+                        // Scroll to syllabus on click when enrolled
+                        btn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            document.querySelector('.course-modules')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        });
+                    });
+                    
+                    // Enable tracking of completed lessons
+                    enableLessonTracking();
+                }
+            }
+
+            function enableLessonTracking() {
+                const lessons = document.querySelectorAll('.module-lesson');
+                const completedLessons = JSON.parse(localStorage.getItem('completedLessons') || '{}');
+
+                const playSvg = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="lesson-icon"><path d="M3 5C3 3.89543 3.89543 3 5 3H15C16.1046 3 17 3.89543 17 5V15C17 16.1046 16.1046 17 15 17H5C3.89543 17 3 16.1046 3 15V5Z" stroke="currentColor" stroke-width="1.5"/><path d="M7.5 7.5L12.5 10L7.5 12.5V7.5Z" fill="currentColor"/></svg>`;
+                const checkSvg = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="lesson-icon completed-icon"><path d="M3 5C3 3.89543 3.89543 3 5 3H15C16.1046 3 17 3.89543 17 5V15C17 16.1046 16.1046 17 15 17H5C3.89543 17 3 16.1046 3 15V5Z" stroke="#4ade80" stroke-width="1.5"/><path d="M6.5 10L9 12.5L14 7.5" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+                lessons.forEach((lesson) => {
+                    const titleEl = lesson.querySelector('.lesson-title');
+                    if (!titleEl) return;
+                    const lessonTitle = titleEl.textContent.trim();
+                    const lessonKey = `${courseTitle} - ${lessonTitle}`;
+
+                    // Set initial UI state
+                    if (completedLessons[lessonKey]) {
+                        lesson.classList.add('completed');
+                        const oldIcon = lesson.querySelector('.lesson-icon');
+                        if (oldIcon) oldIcon.outerHTML = checkSvg;
+                    }
+
+                    // Add dynamic check-off toggler
+                    lesson.style.cursor = 'pointer';
+                    if (!lesson.dataset.hasListener) {
+                        lesson.dataset.hasListener = 'true';
+                        lesson.addEventListener('click', function(e) {
+                            const isCompleted = lesson.classList.contains('completed');
+                            if (isCompleted) {
+                                lesson.classList.remove('completed');
+                                const oldIcon = lesson.querySelector('.lesson-icon');
+                                if (oldIcon) oldIcon.outerHTML = playSvg;
+                                delete completedLessons[lessonKey];
+                            } else {
+                                lesson.classList.add('completed');
+                                const oldIcon = lesson.querySelector('.lesson-icon');
+                                if (oldIcon) oldIcon.outerHTML = checkSvg;
+                                completedLessons[lessonKey] = true;
+                            }
+                            localStorage.setItem('completedLessons', JSON.stringify(completedLessons));
+
+                            // Calculate progress percentage
+                            const totalLessons = lessons.length;
+                            const completedCount = Array.from(lessons).filter(l => l.classList.contains('completed')).length;
+                            const progress = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+
+                            // Save to courseProgress
+                            const courseProgress = JSON.parse(localStorage.getItem('courseProgress') || '{}');
+                            courseProgress[courseTitle] = progress;
+                            localStorage.setItem('courseProgress', JSON.stringify(courseProgress));
+
+                            // Show visual completion toast
+                            showCompletionToast(lessonTitle, !isCompleted);
+                        });
+                    }
+                });
+            }
+
+            function showCompletionToast(lessonTitle, isCompleted) {
+                const toast = document.getElementById('toast');
+                if (toast) {
+                    toast.querySelector('.toast-title').textContent = isCompleted ? 'Lesson Completed!' : 'Lesson Reset';
+                    toast.querySelector('.toast-message').textContent = lessonTitle;
+                    toast.classList.add('show');
+                    setTimeout(() => {
+                        toast.classList.remove('show');
+                    }, 3000);
+                }
+            }
+
+            // Run initial check
+            checkEnrollment();
+
+            // Listen to layout-level enroll event
+            window.addEventListener('course-enrolled', function(e) {
+                if (e.detail && e.detail.courseName === courseTitle) {
+                    checkEnrollment();
+                }
+            });
         });
     </script>
 }

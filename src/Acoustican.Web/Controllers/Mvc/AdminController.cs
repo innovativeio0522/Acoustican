@@ -60,4 +60,12 @@ public class AdminController : Controller
         ViewData["ActivePage"] = "files";
         return View();
     }
+
+    [HttpGet("contact")]
+    public IActionResult Contact()
+    {
+        ViewData["ActivePage"] = "contact";
+        return View();
+    }
 }
+

@@ -78,6 +78,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (existingSlides.length > 0) {
             // SSR content already present — just set up the widget
             setupModuleWidget();
+            if (typeof window.updateModuleProgress === 'function') {
+                window.updateModuleProgress();
+            }
             return;
         }
 
@@ -117,9 +120,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <span>⏱ ${course.durationMinutes}m</span>
                                 <span>⭐ ${course.rating || '0.0'}</span>
                             </div>
-                            <div class="mpw-progress-row">
-                                <div class="mpw-progress-bar"><div class="mpw-progress-fill" style="width:0%"></div></div>
-                                <span class="mpw-progress-label">Not started</span>
                             </div>
                         </div>
                     `;
@@ -130,6 +130,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 // Re-initialize slider if needed or call widget setup
                 setupModuleWidget();
+                if (typeof window.updateModuleProgress === 'function') {
+                    window.updateModuleProgress();
+                }
             }
         } catch (err) {
             console.error('Error loading dynamic courses:', err);
@@ -779,7 +782,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const toast = document.getElementById('toast');
 
     const actionButtons = document.querySelectorAll(
-        '.course-btn, .pricing-btn, .nav-cta, .btn-primary:not([type="submit"]):not(.nav-cta)'
+        '.course-btn, .nav-cta, .btn-primary:not([type="submit"]):not(.nav-cta)'
     );
 
     actionButtons.forEach(btn => {
@@ -857,6 +860,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         enrollForm.addEventListener('submit', (e) => {
             e.preventDefault();
             closeEnrollModal();
+
+            // Extract plan/course name from the selected plan text
+            let planName = 'GuitarVerse Masterclass';
+            const selectedSpan = selectedPlanText ? selectedPlanText.querySelector('span') : null;
+            if (selectedSpan) {
+                planName = selectedSpan.textContent.trim();
+            }
+
+            // Save to enrolledCourses in localStorage
+            let enrolled = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
+            if (!enrolled.includes(planName)) {
+                enrolled.push(planName);
+                localStorage.setItem('enrolledCourses', JSON.stringify(enrolled));
+            }
+
+            // Update module progress on page
+            if (typeof updateModuleProgress === 'function') {
+                updateModuleProgress();
+            }
+
+            // Dispatch event for details page to pick up
+            window.dispatchEvent(new CustomEvent('course-enrolled', { detail: { courseName: planName } }));
 
             // Display Toast notification for Enrollment
             if (toast) {
@@ -960,4 +985,75 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (enrollModal) enrollModal.classList.add('active');
         });
     }
+
+    // ===== MODULE PROGRESS UPDATER =====
+    window.updateModuleProgress = function() {
+        const slides = document.querySelectorAll('.mpw-slide');
+        const enrolledCourses = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
+        const courseProgress = JSON.parse(localStorage.getItem('courseProgress') || '{}');
+
+        slides.forEach(slide => {
+            const titleEl = slide.querySelector('.mpw-title');
+            if (!titleEl) return;
+            const courseTitle = titleEl.textContent.trim();
+            const fillEl = slide.querySelector('.mpw-progress-fill');
+            const labelEl = slide.querySelector('.mpw-progress-label');
+
+            if (!fillEl || !labelEl) return;
+
+            if (enrolledCourses.includes(courseTitle)) {
+                const progress = courseProgress[courseTitle] || 0;
+                fillEl.style.width = `${progress}%`;
+                if (progress > 0) {
+                    labelEl.textContent = `${progress}% completed`;
+                } else {
+                    labelEl.textContent = 'Enrolled';
+                }
+            } else {
+                fillEl.style.width = '0%';
+                labelEl.textContent = 'Not started';
+            }
+        });
+    };
+
+    // Initial run
+    window.updateModuleProgress();
+
+    // ===== MOBILE RESPONSIVE OVERFLOW DEBUGGER =====
+    const checkOverflow = () => {
+        const badElements = [];
+        document.querySelectorAll('*').forEach(el => {
+            if (el.offsetWidth > window.innerWidth && el.id !== 'bb-overflow-debug') {
+                const hasOverflowingChild = Array.from(el.children).some(child => child.offsetWidth > window.innerWidth);
+                if (!hasOverflowingChild) {
+                    badElements.push(el);
+                }
+            }
+        });
+        
+        if (badElements.length > 0) {
+            let debugDiv = document.getElementById('bb-overflow-debug');
+            if (!debugDiv) {
+                debugDiv = document.createElement('div');
+                debugDiv.id = 'bb-overflow-debug';
+                debugDiv.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(220,38,38,0.95);color:#fff;padding:8px 12px;font-size:12px;z-index:999999;font-family:monospace;max-height:150px;overflow-y:auto;text-align:left;line-height:1.4;';
+                document.body.appendChild(debugDiv);
+            }
+            const info = badElements.map(el => {
+                const tag = el.tagName.toLowerCase();
+                const cls = el.className ? '.' + Array.from(el.classList).join('.') : '';
+                const id = el.id ? '#' + el.id : '';
+                return `${tag}${id}${cls} (${el.offsetWidth}px > ${window.innerWidth}px)`;
+            }).join('<br>');
+            debugDiv.innerHTML = '<strong>⚠️ Responsive Overflows (Innermost):</strong><br>' + info;
+        } else {
+            const debugDiv = document.getElementById('bb-overflow-debug');
+            if (debugDiv) debugDiv.remove();
+        }
+    };
+    
+    // Check after animations complete
+    setTimeout(checkOverflow, 2000);
+    window.addEventListener('resize', checkOverflow);
+    window.addEventListener('orientationchange', () => setTimeout(checkOverflow, 500));
 });

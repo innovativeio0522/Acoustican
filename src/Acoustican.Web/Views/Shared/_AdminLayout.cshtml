@@ -6,6 +6,7 @@
     <title>@ViewData["Title"] - Acoustican Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/js/dataTables.bootstrap5.min.css" rel="stylesheet">
 
     <script>
         if (!localStorage.getItem('adminToken')) {
@@ -72,6 +73,26 @@
             background: var(--darker);
             border: 1px solid #222228;
             color: var(--light-text);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: #111115 !important;
+            border-bottom: 1px solid #222228 !important;
+            color: var(--light-text) !important;
+            padding: 14px 20px;
+            font-weight: 600;
+        }
+
+        .card-footer {
+            background: #111115 !important;
+            border-top: 1px solid #222228 !important;
+            color: var(--muted-text) !important;
+        }
+
+        .border-bottom {
+            border-bottom-color: #222228 !important;
         }
 
         .btn-primary {
@@ -103,41 +124,310 @@
             color: var(--dark);
         }
 
-        .table {
+        /* Premium Table Customizations */
+        .table-responsive {
+            scrollbar-width: thin;
+            scrollbar-color: #32323a var(--darker);
+        }
+        .table-responsive::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #32323a;
+            border-radius: 3px;
+        }
+        .table-responsive::-webkit-scrollbar-track {
             background: var(--darker);
-            color: var(--light-text);
         }
 
-        .table thead {
-            border-bottom: 2px solid #222228;
+        .table {
+            background: var(--darker) !important;
+            color: var(--light-text) !important;
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+            margin-bottom: 0 !important;
+            width: 100% !important;
+            border: none !important;
+        }
+
+        .table th {
+            text-transform: uppercase !important;
+            font-size: 0.725rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.08em !important;
+            color: var(--muted-text) !important;
+            border-bottom: 2px solid #222228 !important;
+            padding: 14px 16px !important;
+            background: #111115 !important;
+        }
+
+        .table td {
+            padding: 14px 16px !important;
+            vertical-align: middle !important;
+            border-bottom: 1px solid #222228 !important;
+            color: #e2e2e9 !important;
+            background: transparent !important;
         }
 
         .table tbody tr {
-            border-bottom: 1px solid #222228;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #222228 !important;
         }
 
         .table tbody tr:hover {
-            background: #1a1a20;
+            background: #1b1b22 !important;
+        }
+
+        .table tbody tr.table-active {
+            background: rgba(245, 166, 35, 0.1) !important;
+            border-left: 3px solid var(--primary) !important;
+        }
+        
+        /* Badges & Tags design */
+        .badge-pill-custom {
+            padding: 5px 12px;
+            font-size: 0.725rem;
+            font-weight: 600;
+            border-radius: 30px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        
+        .badge-status-published, .badge-status-read, .badge-status-yes {
+            background: rgba(46, 204, 113, 0.12) !important;
+            color: #2ecc71 !important;
+            border: 1px solid rgba(46, 204, 113, 0.25);
+        }
+        
+        .badge-status-draft, .badge-status-no {
+            background: rgba(108, 117, 125, 0.12) !important;
+            color: #a0a0a8 !important;
+            border: 1px solid rgba(108, 117, 125, 0.25);
+        }
+        
+        .badge-status-pending, .badge-status-unread {
+            background: rgba(245, 166, 35, 0.12) !important;
+            color: #f5a623 !important;
+            border: 1px solid rgba(245, 166, 35, 0.25);
+        }
+
+        .badge-status-popular {
+            background: rgba(245, 166, 35, 0.15) !important;
+            color: var(--primary) !important;
+            border: 1px solid rgba(245, 166, 35, 0.3);
+        }
+        
+        .badge-level {
+            background: rgba(52, 152, 219, 0.12) !important;
+            color: #3498db !important;
+            border: 1px solid rgba(52, 152, 219, 0.25);
+        }
+
+        /* Action buttons */
+        .btn-action {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            background: #1f1f26;
+            border: 1px solid #32323a;
+            color: var(--muted-text) !important;
+            margin-right: 4px;
+        }
+
+        .btn-action:hover {
+            color: #ffffff !important;
+        }
+
+        .btn-action-edit:hover {
+            background: rgba(245, 166, 35, 0.15) !important;
+            border-color: var(--primary) !important;
+            color: var(--primary) !important;
+        }
+
+        .btn-action-delete:hover {
+            background: rgba(231, 76, 60, 0.15) !important;
+            border-color: #e74c3c !important;
+            color: #e74c3c !important;
+        }
+
+        .btn-action-toggle:hover {
+            background: rgba(46, 204, 113, 0.15) !important;
+            border-color: #2ecc71 !important;
+            color: #2ecc71 !important;
+        }
+
+        .btn-action-toggle-off:hover {
+            background: rgba(108, 117, 125, 0.15) !important;
+            border-color: #a0a0a8 !important;
+            color: #a0a0a8 !important;
+        }
+
+        /* DataTables custom controls styles */
+        .dataTables_wrapper {
+            padding: 10px 0;
+        }
+
+        .dataTables_wrapper .dataTables_length select {
+            background-color: #111115 !important;
+            border: 1px solid #222228 !important;
+            color: var(--light-text) !important;
+            border-radius: 6px;
+            padding: 4px 24px 4px 8px;
+            font-size: 0.85rem;
+        }
+
+        .dataTables_wrapper .dataTables_filter input {
+            background-color: #111115 !important;
+            border: 1px solid #222228 !important;
+            color: var(--light-text) !important;
+            border-radius: 30px;
+            padding: 6px 16px;
+            font-size: 0.85rem;
+            min-width: 220px;
+            transition: all 0.3s ease;
+        }
+
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.15) !important;
+            outline: none;
+        }
+
+        .dataTables_wrapper .dataTables_info {
+            color: var(--muted-text) !important;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding-top: 15px;
+        }
+
+        .dataTables_wrapper .pagination {
+            margin-top: 12px;
+            gap: 4px;
+            justify-content: flex-end;
+        }
+
+        .dataTables_wrapper .page-item .page-link {
+            background-color: #111115 !important;
+            border: 1px solid #222228 !important;
+            color: var(--muted-text) !important;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            box-shadow: none !important;
+        }
+
+        .dataTables_wrapper .page-item:hover .page-link {
+            background-color: #1f1f26 !important;
+            color: #ffffff !important;
+            border-color: #32323a !important;
+        }
+
+        .dataTables_wrapper .page-item.active .page-link {
+            background-color: var(--primary) !important;
+            border-color: var(--primary) !important;
+            color: var(--dark) !important;
+            font-weight: 600;
+            box-shadow: 0 0 8px rgba(245, 166, 35, 0.3) !important;
+        }
+
+        .dataTables_wrapper .page-item.disabled .page-link {
+            background-color: #0d0d0f !important;
+            border-color: #1a1a20 !important;
+            color: #55555d !important;
+        }
+        
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            margin-bottom: 15px;
+            color: var(--muted-text);
+            font-size: 0.85rem;
         }
 
         .form-control,
         .form-select {
-            background: var(--darker);
+            background: #111115;
             color: var(--light-text);
             border: 1px solid #222228;
         }
 
         .form-control:focus,
         .form-select:focus {
-            background: var(--darker);
+            background: #111115;
             color: var(--light-text);
             border-color: var(--primary);
             box-shadow: 0 0 0 0.2rem rgba(245, 166, 35, 0.25);
         }
 
+        .form-control::placeholder {
+            color: #55555d;
+        }
+
         textarea.form-control {
             resize: vertical;
             min-height: 100px;
+        }
+
+        .form-label {
+            color: var(--muted-text);
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+
+        .form-check-input {
+            background-color: #111115;
+            border-color: #32323a;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        /* Input group */
+        .input-group-text {
+            background: #111115;
+            border: 1px solid #222228;
+            color: var(--muted-text);
+        }
+
+        /* Alert overrides */
+        .alert-success {
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.25);
+            color: #2ecc71;
+        }
+
+        .alert-danger {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.25);
+            color: #e74c3c;
+        }
+
+        .alert-warning {
+            background: rgba(245, 166, 35, 0.1);
+            border: 1px solid rgba(245, 166, 35, 0.25);
+            color: var(--primary);
+        }
+
+        .alert-info {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid rgba(52, 152, 219, 0.25);
+            color: #3498db;
         }
 
         .modal-content {
@@ -222,6 +512,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "contact" ? "active" : "")" href="/admin/contact">
+                        <i class="fas fa-envelope me-2"></i> Contact
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "files" ? "active" : "")" href="/admin/files">
                         <i class="fas fa-folder-open me-2"></i> Files
                     </a>
@@ -234,7 +529,10 @@
         @RenderBody()
     </main>
 
+    <script src="/js/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/jquery.dataTables.min.js"></script>
+    <script src="/js/dataTables.bootstrap5.min.js"></script>
     <script src="/js/admin.js"></script>
     
     <script>

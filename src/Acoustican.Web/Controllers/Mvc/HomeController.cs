@@ -119,6 +119,20 @@ public class HomeController : Controller
         }
     }
 
+    [HttpGet("cart")]
+    public IActionResult Cart()
+    {
+        ViewData["ActivePage"] = "Cart";
+        return View();
+    }
+
+    [HttpGet("orders")]
+    public IActionResult Orders()
+    {
+        ViewData["ActivePage"] = "Orders";
+        return View();
+    }
+
     [HttpGet("debug-refresh-modules")]
     public async Task<IActionResult> DebugRefreshModules()
     {
