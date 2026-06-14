@@ -897,18 +897,57 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const contactForm = document.getElementById('contactForm');
     if (contactForm) {
-        contactForm.addEventListener('submit', (e) => {
+        contactForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            contactForm.reset();
+            
+            const submitBtn = contactForm.querySelector('button[type="submit"]');
+            const originalBtnHtml = submitBtn ? submitBtn.innerHTML : 'Send Message';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Sending...';
+            }
 
-            // Display Toast notification for Contact Message
-            if (toast) {
-                toast.querySelector('.toast-title').textContent = 'Message Sent';
-                toast.querySelector('.toast-message').textContent = 'Thank you! We will get back to you shortly.';
-                toast.classList.add('show');
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                }, 4000);
+            const name = document.getElementById('contactName')?.value;
+            const email = document.getElementById('contactEmail')?.value;
+            const subject = document.getElementById('contactSubject')?.value;
+            const message = document.getElementById('contactMessage')?.value;
+
+            try {
+                const response = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, email, subject, message })
+                });
+
+                if (response.ok) {
+                    contactForm.reset();
+                    if (toast) {
+                        toast.querySelector('.toast-title').textContent = 'Message Sent';
+                        toast.querySelector('.toast-message').textContent = 'Thank you! We will get back to you shortly.';
+                        toast.classList.add('show');
+                        setTimeout(() => {
+                            toast.classList.remove('show');
+                        }, 4000);
+                    }
+                } else {
+                    throw new Error('Failed to send message');
+                }
+            } catch (err) {
+                if (toast) {
+                    toast.querySelector('.toast-title').textContent = 'Error';
+                    toast.querySelector('.toast-message').textContent = 'Could not send message. Please try again.';
+                    toast.classList.add('show');
+                    setTimeout(() => {
+                        toast.classList.remove('show');
+                    }, 4000);
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHtml;
+                }
             }
         });
     }
