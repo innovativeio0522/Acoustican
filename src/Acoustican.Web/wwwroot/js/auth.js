@@ -106,18 +106,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===== SUBSCRIPTION FLOW =====
     const handlePendingSubscription = async () => {
         const modal = document.getElementById('authModal');
-        if (!modal) return;
-        const pendingTierId = modal.getAttribute('data-pending-tier');
-        const pendingTierName = modal.getAttribute('data-pending-tier-name') || 'this plan';
+        let pendingTierId = modal ? modal.getAttribute('data-pending-tier') : null;
+        let pendingTierName = modal ? modal.getAttribute('data-pending-tier-name') : 'this plan';
+
+        if (!pendingTierId) {
+            pendingTierId = localStorage.getItem('pendingTierId');
+            pendingTierName = localStorage.getItem('pendingTierName') || 'this plan';
+        }
+
         if (pendingTierId) {
-            modal.removeAttribute('data-pending-tier');
-            modal.removeAttribute('data-pending-tier-name');
+            if (modal) {
+                modal.removeAttribute('data-pending-tier');
+                modal.removeAttribute('data-pending-tier-name');
+            }
+            localStorage.removeItem('pendingTierId');
+            localStorage.removeItem('pendingTierName');
+
             const token = localStorage.getItem('userToken');
             if (token) {
                 await doSubscribe(pendingTierId, pendingTierName, token);
             }
         }
     };
+    window.handlePendingSubscription = handlePendingSubscription;
 
     async function doSubscribe(tierId, tierName, token) {
         try {
@@ -130,16 +141,203 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ pricingTierId: parseInt(tierId) })
             });
 
-            if (response.ok) {
-                showToast('Subscribed! 🎸', `Welcome to the ${tierName} plan!`, 'success');
-                setTimeout(() => window.location.reload(), 2000);
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                const sub = data.subscription;
+                
+                if (!sub.requiresPayment) {
+                    showToast('Subscribed! 🎸', `Welcome to the ${tierName} plan!`, 'success');
+                    setTimeout(() => window.location.reload(), 2000);
+                    return;
+                }
+
+                // Requires Payment
+                const verifySubscriptionPayment = async (razorpayOrderId, razorpayPaymentId, razorpaySignature) => {
+                    try {
+                        const verifyRes = await fetch(`${API_URL}/subscriptions/verify`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                razorpayOrderId,
+                                razorpayPaymentId,
+                                razorpaySignature
+                            })
+                        });
+                        const verifyData = await verifyRes.json();
+
+                        if (verifyRes.ok && verifyData.success) {
+                            showToast('Payment Verified! 🎸', `Welcome to the ${tierName} plan!`, 'success');
+                            setTimeout(() => window.location.reload(), 2000);
+                        } else {
+                            showToast('Verification Failed', verifyData.message || 'Verification failed.', 'error');
+                        }
+                    } catch {
+                        showToast('Error', 'Payment verification connection failed.', 'error');
+                    }
+                };
+
+                // Check if we are running in Mock Mode
+                if (sub.razorpayOrderId && sub.razorpayOrderId.startsWith("order_mock_")) {
+                    showSubscriptionMockModal(sub, tierName,
+                        (response) => {
+                            verifySubscriptionPayment(response.razorpay_order_id, response.razorpay_payment_id, response.razorpay_signature);
+                        },
+                        (errorMsg) => {
+                            showToast('Cancelled', errorMsg, 'info');
+                        }
+                    );
+                } else {
+                    // Real Razorpay Flow: load SDK dynamically first
+                    loadRazorpayScript(() => {
+                        const options = {
+                            "key": sub.razorpayKey,
+                            "amount": Math.round(sub.planPrice * 100), // in paise
+                            "currency": "INR",
+                            "name": "Acoustican",
+                            "description": `Subscription to ${tierName} plan`,
+                            "order_id": sub.razorpayOrderId,
+                            "handler": function (response) {
+                                verifySubscriptionPayment(response.razorpay_order_id, response.razorpay_payment_id, response.razorpay_signature);
+                            },
+                            "prefill": {
+                                "name": "",
+                                "email": ""
+                            },
+                            "theme": {
+                                "color": "#f5a623"
+                            }
+                        };
+
+                        // Retrieve prefill info if possible
+                        try {
+                            const userData = JSON.parse(localStorage.getItem('userData'));
+                            if (userData) {
+                                options.prefill.name = userData.fullName || userData.username || "";
+                                options.prefill.email = userData.email || "";
+                            }
+                        } catch (_) {}
+
+                        const rzp = new Razorpay(options);
+                        rzp.on('payment.failed', function (response) {
+                            showToast('Payment Failed', response.error.description, 'error');
+                        });
+                        rzp.open();
+                    });
+                }
             } else {
-                const errData = await response.json().catch(() => null);
-                showToast('Subscription Failed', errData?.message || 'Failed to subscribe.', 'error');
+                showToast('Subscription Failed', data?.message || 'Failed to subscribe.', 'error');
             }
         } catch (err) {
             showToast('Error', 'Connection failed. Please try again.', 'error');
         }
+    }
+
+    function loadRazorpayScript(callback) {
+        if (window.Razorpay) {
+            callback();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = callback;
+        script.onerror = () => {
+            showToast('Error', 'Failed to load payment SDK. Please check your connection.', 'error');
+        };
+        document.head.appendChild(script);
+    }
+
+    function showSubscriptionMockModal(sub, planName, onConfirm, onCancel) {
+        const existing = document.getElementById('mockSubPaymentOverlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'mockSubPaymentOverlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(10, 10, 12, 0.85)';
+        overlay.style.backdropFilter = 'blur(12px)';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.zIndex = '99999';
+        overlay.style.fontFamily = "'Inter', sans-serif";
+
+        const card = document.createElement('div');
+        card.style.background = 'linear-gradient(135deg, #1e1e24, #121216)';
+        card.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+        card.style.borderRadius = '20px';
+        card.style.padding = '32px';
+        card.style.width = '90%';
+        card.style.maxWidth = '420px';
+        card.style.color = '#ffffff';
+        card.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.5)';
+        card.style.textAlign = 'center';
+
+        card.innerHTML = `
+            <div style="font-size: 3rem; margin-bottom: 16px;">🎸</div>
+            <h3 style="margin: 0 0 8px; font-size: 1.5rem; font-weight: 700; background: linear-gradient(90deg, #f5a623, #f8e71c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                Mock Plan Subscription
+            </h3>
+            <div style="display: inline-block; padding: 4px 10px; font-size: 0.75rem; background: rgba(245, 166, 35, 0.15); border: 1px solid rgba(245, 166, 35, 0.3); border-radius: 20px; color: #f5a623; margin-bottom: 24px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                Test Mode (No Keys)
+            </div>
+            
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 16px; text-align: left; margin-bottom: 24px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: rgba(255, 255, 255, 0.5); font-size: 0.9rem;">Plan Name</span>
+                    <span style="font-weight: 600; font-size: 0.9rem; color: #f5a623;">${planName}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: rgba(255, 255, 255, 0.5); font-size: 0.9rem;">Amount Due</span>
+                    <span style="font-weight: 700; color: #4ade80; font-size: 1.1rem;">₹${sub.planPrice.toLocaleString('en-IN')} / ${sub.billingPeriod || 'month'}</span>
+                </div>
+            </div>
+
+            <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; margin-bottom: 24px; line-height: 1.5;">
+                Simulate a transaction outcome to verify plan activation.
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button id="btnMockSubSuccess" style="background: #22c55e; border: none; border-radius: 10px; padding: 12px; color: #fff; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s;">
+                    Simulate Successful Payment
+                </button>
+                <button id="btnMockSubFailure" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; padding: 12px; color: #ef4444; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s;">
+                    Simulate Failed Payment
+                </button>
+                <button id="btnMockSubCancel" style="background: transparent; border: none; padding: 8px; color: rgba(255, 255, 255, 0.4); font-size: 0.85rem; cursor: pointer; text-decoration: underline;">
+                    Cancel Subscription
+                </button>
+            </div>
+        `;
+
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+
+        document.getElementById('btnMockSubSuccess').onclick = () => {
+            overlay.remove();
+            onConfirm({
+                razorpay_order_id: sub.razorpayOrderId,
+                razorpay_payment_id: "pay_mock_" + Math.random().toString(36).substring(2, 11),
+                razorpay_signature: "sig_mock_" + Math.random().toString(36).substring(2, 11)
+            });
+        };
+
+        document.getElementById('btnMockSubFailure').onclick = () => {
+            overlay.remove();
+            onCancel("Payment simulation failed.");
+        };
+
+        document.getElementById('btnMockSubCancel').onclick = () => {
+            overlay.remove();
+            onCancel("Subscription cancelled by user.");
+        };
     }
 
     window.subscribeToPlan = async function(tierId, tierName) {
@@ -149,6 +347,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (modal) {
                 modal.setAttribute('data-pending-tier', tierId);
                 modal.setAttribute('data-pending-tier-name', tierName);
+                localStorage.setItem('pendingTierId', tierId);
+                localStorage.setItem('pendingTierName', tierName);
                 openAuthModal('login');
                 showToast('Sign In Required', `Please sign in to subscribe to ${tierName}.`, 'info');
             }
@@ -262,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                await updateAuthUI();
+                await window.updateAuthUI();
                 await handlePendingSubscription();
                 closeAuthModal();
                 if (window.GVCart && typeof window.GVCart.syncCartOnLogin === 'function') {
@@ -314,11 +514,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.handleLogout = function() {
         localStorage.removeItem('userToken');
         localStorage.removeItem('userData');
-        updateAuthUI();
+        window.updateAuthUI();
         window.location.reload();
     };
 
-    async function updateAuthUI() {
+    window.updateAuthUI = async function updateAuthUI() {
         const token = localStorage.getItem('userToken');
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         const userProfile = document.getElementById('userProfile');
@@ -329,7 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (token) {
             if (userProfile) userProfile.classList.remove('d-none');
             if (authActions) authActions.classList.add('d-none');
-            const name = userData.fullName || 'User';
+            const name = userData.fullName || userData.FullName || 'User';
             if (userFullName) userFullName.textContent = name;
             if (userDropdownName) userDropdownName.textContent = name;
 

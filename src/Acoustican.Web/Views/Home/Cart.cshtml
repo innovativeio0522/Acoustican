@@ -109,6 +109,7 @@
 </div>
 
 @section Scripts {
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const loadingEl = document.getElementById('cartLoading');
@@ -243,36 +244,214 @@
                     const data = await res.json();
                     
                     if (res.ok && data.success) {
-                        // Clear cart locally if any leftover
-                        window.GVCart.clearGuestCart();
-                        await window.GVCart.refreshBadge();
-                        
-                        // Show success view
-                        successOrderId.textContent = `#GVA-ORD-${data.order.id}`;
-                        successOrderTotal.textContent = `₹${data.order.totalAmount.toLocaleString('en-IN')}`;
-                        
-                        activeEl.style.display = 'none';
-                        successEl.style.display = 'block';
+                        const order = data.order;
+                        const orderId = order.id;
+                        const totalAmount = order.totalAmount;
+                        const items = order.items;
 
-                        // Save purchased course titles to local storage for the CourseDetail "Resume Learning" UI check
-                        const enrolledCourses = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
-                        data.order.items.forEach(item => {
-                            if (!enrolledCourses.includes(item.courseTitle)) {
-                                enrolledCourses.push(item.courseTitle);
+                        const verifyPayment = async (razorpayOrderId, razorpayPaymentId, razorpaySignature) => {
+                            try {
+                                const verifyRes = await fetch('/api/orders/verify', {
+                                    method: 'POST',
+                                    headers: window.GVCart.authHeaders(),
+                                    body: JSON.stringify({
+                                        razorpayOrderId,
+                                        razorpayPaymentId,
+                                        razorpaySignature
+                                    })
+                                });
+                                const verifyData = await verifyRes.json();
+
+                                if (verifyRes.ok && verifyData.success) {
+                                    // Clear cart locally if any leftover
+                                    window.GVCart.clearGuestCart();
+                                    await window.GVCart.refreshBadge();
+                                    
+                                    // Show success view
+                                    successOrderId.textContent = `#GVA-ORD-${orderId}`;
+                                    successOrderTotal.textContent = `₹${totalAmount.toLocaleString('en-IN')}`;
+                                    
+                                    activeEl.style.display = 'none';
+                                    successEl.style.display = 'block';
+
+                                    // Save purchased course titles to local storage for the CourseDetail "Resume Learning" UI check
+                                    const enrolledCourses = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
+                                    items.forEach(item => {
+                                        if (!enrolledCourses.includes(item.courseTitle)) {
+                                            enrolledCourses.push(item.courseTitle);
+                                        }
+                                    });
+                                    localStorage.setItem('enrolledCourses', JSON.stringify(enrolledCourses));
+                                } else {
+                                    alert(verifyData.message || 'Payment verification failed. Please try again.');
+                                    resetCheckoutBtn();
+                                }
+                            } catch {
+                                alert('An error occurred during payment verification. Please check your connection.');
+                                resetCheckoutBtn();
                             }
-                        });
-                        localStorage.setItem('enrolledCourses', JSON.stringify(enrolledCourses));
+                        };
+
+                        const resetCheckoutBtn = () => {
+                            btnCheckout.disabled = false;
+                            btnCheckout.innerHTML = `Proceed to Checkout <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+                        };
+
+                        // Check if we are running in Mock Mode
+                        if (order.razorpayOrderId && order.razorpayOrderId.startsWith("order_mock_")) {
+                            showMockPaymentModal(order, 
+                                (response) => {
+                                    verifyPayment(response.razorpay_order_id, response.razorpay_payment_id, response.razorpay_signature);
+                                }, 
+                                (errorMsg) => {
+                                    alert(errorMsg);
+                                    resetCheckoutBtn();
+                                }
+                            );
+                        } else {
+                            // Real Razorpay Flow
+                            const options = {
+                                "key": order.razorpayKey,
+                                "amount": Math.round(order.totalAmount * 100), // in paise
+                                "currency": "INR",
+                                "name": "Acoustican",
+                                "description": "Course Enrollment Purchase",
+                                "order_id": order.razorpayOrderId,
+                                "handler": function (response) {
+                                    verifyPayment(response.razorpay_order_id, response.razorpay_payment_id, response.razorpay_signature);
+                                },
+                                "prefill": {
+                                    "name": "",
+                                    "email": ""
+                                },
+                                "theme": {
+                                    "color": "#f5a623"
+                                },
+                                "modal": {
+                                    "ondismiss": function() {
+                                        resetCheckoutBtn();
+                                    }
+                                }
+                            };
+
+                            // Retrieve prefill info if possible
+                            try {
+                                const userData = JSON.parse(localStorage.getItem('userData'));
+                                if (userData) {
+                                    options.prefill.name = userData.name || userData.username || "";
+                                    options.prefill.email = userData.email || "";
+                                }
+                            } catch (_) {}
+
+                            const rzp = new Razorpay(options);
+                            rzp.on('payment.failed', function (response) {
+                                alert("Payment failed: " + response.error.description);
+                                resetCheckoutBtn();
+                            });
+                            rzp.open();
+                        }
                     } else {
                         alert(data.message || 'Checkout failed. Please try again.');
                         btnCheckout.disabled = false;
                         btnCheckout.innerHTML = `Proceed to Checkout <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
                     }
-                } catch {
+                } catch (e) {
+                    console.error(e);
                     alert('An error occurred during checkout. Please check your connection.');
                     btnCheckout.disabled = false;
                     btnCheckout.innerHTML = `Proceed to Checkout <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
                 }
             });
+
+            function showMockPaymentModal(order, onConfirm, onCancel) {
+                const existing = document.getElementById('mockPaymentOverlay');
+                if (existing) existing.remove();
+
+                const overlay = document.createElement('div');
+                overlay.id = 'mockPaymentOverlay';
+                overlay.style.position = 'fixed';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.width = '100%';
+                overlay.style.height = '100%';
+                overlay.style.backgroundColor = 'rgba(10, 10, 12, 0.85)';
+                overlay.style.backdropFilter = 'blur(12px)';
+                overlay.style.display = 'flex';
+                overlay.style.alignItems = 'center';
+                overlay.style.justifyContent = 'center';
+                overlay.style.zIndex = '99999';
+                overlay.style.fontFamily = "'Inter', sans-serif";
+
+                const card = document.createElement('div');
+                card.style.background = 'linear-gradient(135deg, #1e1e24, #121216)';
+                card.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+                card.style.borderRadius = '20px';
+                card.style.padding = '32px';
+                card.style.width = '100%';
+                card.style.maxWidth = '420px';
+                card.style.color = '#ffffff';
+                card.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.5)';
+                card.style.textAlign = 'center';
+
+                card.innerHTML = `
+                    <div style="font-size: 3rem; margin-bottom: 16px;">🎸</div>
+                    <h3 style="margin: 0 0 8px; font-size: 1.5rem; font-weight: 700; background: linear-gradient(90deg, #f5a623, #f8e71c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                        Mock Payment Gateway
+                    </h3>
+                    <div style="display: inline-block; padding: 4px 10px; font-size: 0.75rem; background: rgba(245, 166, 35, 0.15); border: 1px solid rgba(245, 166, 35, 0.3); border-radius: 20px; color: #f5a623; margin-bottom: 24px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Test Mode (No Keys)
+                    </div>
+                    
+                    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 16px; text-align: left; margin-bottom: 24px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: rgba(255, 255, 255, 0.5); font-size: 0.9rem;">Order Reference</span>
+                            <span style="font-weight: 600; font-size: 0.9rem;">#GVA-ORD-${order.id}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: rgba(255, 255, 255, 0.5); font-size: 0.9rem;">Amount Due</span>
+                            <span style="font-weight: 700; color: #4ade80; font-size: 1.1rem;">₹${order.totalAmount.toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>
+
+                    <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; margin-bottom: 24px; line-height: 1.5;">
+                        Simulate a transaction outcome to verify backend order validation and user enrollment.
+                    </p>
+
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <button id="btnMockSuccess" style="background: #22c55e; border: none; border-radius: 10px; padding: 12px; color: #fff; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s;">
+                            Simulate Successful Payment
+                        </button>
+                        <button id="btnMockFailure" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; padding: 12px; color: #ef4444; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s;">
+                            Simulate Failed Payment
+                        </button>
+                        <button id="btnMockCancel" style="background: transparent; border: none; padding: 8px; color: rgba(255, 255, 255, 0.4); font-size: 0.85rem; cursor: pointer; text-decoration: underline;">
+                            Cancel Checkout
+                        </button>
+                    </div>
+                `;
+
+                overlay.appendChild(card);
+                document.body.appendChild(overlay);
+
+                document.getElementById('btnMockSuccess').onclick = () => {
+                    overlay.remove();
+                    onConfirm({
+                        razorpay_order_id: order.razorpayOrderId,
+                        razorpay_payment_id: "pay_mock_" + Math.random().toString(36).substring(2, 11),
+                        razorpay_signature: "sig_mock_" + Math.random().toString(36).substring(2, 11)
+                    });
+                };
+
+                document.getElementById('btnMockFailure').onclick = () => {
+                    overlay.remove();
+                    onCancel("Payment simulation failed.");
+                };
+
+                document.getElementById('btnMockCancel').onclick = () => {
+                    overlay.remove();
+                    onCancel("Checkout cancelled by user.");
+                };
+            }
 
             // Run initial load
             window.renderCartPage();

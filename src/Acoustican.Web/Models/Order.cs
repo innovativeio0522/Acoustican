@@ -7,6 +7,7 @@ public class Order
     public decimal TotalAmount { get; set; }
     public string Status { get; set; } = "Pending"; // Pending, Confirmed, Cancelled
     public string? PaymentId { get; set; }           // Future: Razorpay/Stripe ID
+    public string? RazorpayOrderId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
