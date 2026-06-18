@@ -170,10 +170,9 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 var app = builder.Build();
 
 
-// Apply migrations (dev only — run migrations via CI/CD in production)
-if (app.Environment.IsDevelopment())
+// Apply migrations and seed database on startup
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.Migrate();
     DbInitializer.Initialize(dbContext);
@@ -192,14 +191,21 @@ if (app.Environment.IsDevelopment())
 // Global exception handling
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler(builder =>
+    if (app.Configuration.GetValue<bool>("Logging:ShowDetailedErrors"))
     {
-        builder.Run(async context =>
+        app.UseDeveloperExceptionPage();
+    }
+    else
+    {
+        app.UseExceptionHandler(builder =>
         {
-            context.Response.StatusCode = 500;
-            await context.Response.WriteAsJsonAsync(new { message = "An unexpected error occurred." });
+            builder.Run(async context =>
+            {
+                context.Response.StatusCode = 500;
+                await context.Response.WriteAsJsonAsync(new { message = "An unexpected error occurred." });
+            });
         });
-    });
+    }
 }
 
 // Enable CORS
