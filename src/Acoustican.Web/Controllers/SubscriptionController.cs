@@ -25,6 +25,21 @@ public class SubscriptionController(ISubscriptionService subscriptionService) : 
         return Ok(new { success = true, subscription });
     }
 
+    [HttpPost("verify")]
+    [Authorize]
+    public async Task<IActionResult> Verify([FromBody] VerifySubscriptionPaymentDto dto)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+            return Unauthorized(new { success = false, message = "Invalid token" });
+
+        var (success, message) = await subscriptionService.VerifySubscriptionPaymentAsync(userId, dto);
+        if (!success)
+            return BadRequest(new { success = false, message });
+
+        return Ok(new { success = true, message });
+    }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> GetMySubscription()

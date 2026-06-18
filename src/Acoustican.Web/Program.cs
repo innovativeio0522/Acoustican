@@ -2,10 +2,12 @@ using System.Text;
 using Acoustican.Data;
 using Acoustican.Mappings;
 using Acoustican.Services;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,15 +20,27 @@ var jwtKey = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrWhiteSpace(jwtKey))
 {
     if (builder.Environment.IsDevelopment())
+    {
         jwtKey = "TemporaryDesignTimeKeyForEFMigrationsToolOnly_MustBeChangedInProduction!";
+        builder.Configuration["Jwt:Key"] = jwtKey;
+    }
     else
         throw new InvalidOperationException("Jwt:Key must be configured in non-development environments.");
 }
 
+
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services
+    .AddAuthentication(options =>
+    {
+        // Use JWT for API authorization by default.
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultSignInScheme = "Cookies";
+    })
+    .AddCookie("Cookies")
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -40,7 +54,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
+    })
+    .AddGoogle(options =>
+    {
+        options.ClientId = builder.Configuration["Google:ClientId"] ?? "";
+        options.ClientSecret = builder.Configuration["Google:ClientSecret"] ?? "";
+
+        // Route must match the one in appsettings.json.
+        options.CallbackPath = builder.Configuration["Google:CallbackPath"] ?? "/api/auth/google/callback";
+
+        options.SaveTokens = true;
+
+        // Fix for HTTP localhost: the correlation cookie defaults to SameSite=None,
+        // which Chrome drops on HTTP (requires Secure). Override it explicitly so
+        // the cookie is sent back when Google redirects to the callback.
+        options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.CorrelationCookie.HttpOnly = true;
     });
+
+
 
 // Add CORS. Prefer Cors:AllowedOrigins, but keep App:AllowedOrigins as a
 // backwards-compatible fallback for the existing local configuration.
@@ -127,12 +160,19 @@ builder.Services.AddSwaggerGen(c =>
     c.AddSecurityRequirement(securityRequirement);
 });
 
+// Needed for Google OAuth state/correlation cookie to persist on localhost HTTP.
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.MinimumSameSitePolicy = SameSiteMode.Lax;
+    options.Secure = CookieSecurePolicy.SameAsRequest;
+});
+
 var app = builder.Build();
 
-// Apply migrations (dev only — run migrations via CI/CD in production)
-if (app.Environment.IsDevelopment())
+
+// Apply migrations and seed database on startup
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.Migrate();
     DbInitializer.Initialize(dbContext);
@@ -151,14 +191,21 @@ if (app.Environment.IsDevelopment())
 // Global exception handling
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler(builder =>
+    if (app.Configuration.GetValue<bool>("Logging:ShowDetailedErrors"))
     {
-        builder.Run(async context =>
+        app.UseDeveloperExceptionPage();
+    }
+    else
+    {
+        app.UseExceptionHandler(builder =>
         {
-            context.Response.StatusCode = 500;
-            await context.Response.WriteAsJsonAsync(new { message = "An unexpected error occurred." });
+            builder.Run(async context =>
+            {
+                context.Response.StatusCode = 500;
+                await context.Response.WriteAsJsonAsync(new { message = "An unexpected error occurred." });
+            });
         });
-    });
+    }
 }
 
 // Enable CORS
@@ -167,6 +214,7 @@ app.UseCors("AllowConfiguredOrigins");
 // Serve static files (uploaded files and admin dashboard)
 app.UseStaticFiles();
 
+app.UseCookiePolicy();
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -1,6 +1,41 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const API_URL = '/api';
 
+    // ===== GOOGLE OAUTH TOKEN HANDLER =====
+    // After Google login, the server redirects to /?token=JWT&user=JSON.
+    // Read the params, persist to localStorage, then clean the URL so the
+    // token never appears in the browser history or bookmarks.
+    (function handleGoogleOAuthRedirect() {
+        const params = new URLSearchParams(window.location.search);
+        const oauthToken = params.get('token');
+        const oauthUser  = params.get('user');
+        if (!oauthToken) return;
+
+        localStorage.setItem('userToken', oauthToken);
+        if (oauthUser) {
+            try {
+                // The server sends a URL-encoded JSON object; store it as-is
+                // so the rest of the app can read it with JSON.parse(localStorage.getItem('userData'))
+                localStorage.setItem('userData', decodeURIComponent(oauthUser));
+            } catch (_) {}
+        }
+
+        // Strip the token params from the URL without triggering a page reload
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        // auth.js ran updateAuthUI() before this IIFE saved the data (timing issue).
+        // Call it again now that localStorage has the correct user info.
+        if (typeof window.updateAuthUI === 'function') {
+            window.updateAuthUI();
+        }
+        if (typeof window.handlePendingSubscription === 'function') {
+            window.handlePendingSubscription();
+        }
+        if (window.GVCart && typeof window.GVCart.syncCartOnLogin === 'function') {
+            window.GVCart.syncCartOnLogin();
+        }
+    })();
+
     // ===== COURSE MODULE TOGGLE =====
     function setupCourseModules() {
         console.log("setupCourseModules running!");
@@ -814,11 +849,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const nameInput = document.getElementById('enrollName');
                 const emailInput = document.getElementById('enrollEmail');
                 if (nameInput) {
-                    nameInput.value = userData.fullName || '';
+                    nameInput.value = userData.fullName || userData.FullName || '';
                     nameInput.readOnly = true;
                 }
                 if (emailInput) {
-                    emailInput.value = userData.email || '';
+                    emailInput.value = userData.email || userData.Email || '';
                     emailInput.readOnly = true;
                 }
             } else {

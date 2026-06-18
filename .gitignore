@@ -94,3 +94,12 @@ appsettings.*.local.json
 coverage.json
 coverage.cobertura.xml
 coveragereport/
+
+## Publish artifacts
+publish/
+publish.zip
+web.zip
+
+## Scratch directory
+scratch/
+

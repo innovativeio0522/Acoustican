@@ -11,13 +11,19 @@ public interface IOrderService
     Task<List<OrderDto>> GetOrdersAsync(int userId);
     Task<OrderDto?> GetOrderByIdAsync(int userId, int orderId);
     Task<(bool Success, string Message)> CancelOrderAsync(int userId, int orderId);
+    Task<(bool Success, string Message)> VerifyOrderPaymentAsync(int userId, VerifyPaymentDto dto);
 }
 
-public class OrderService(ApplicationDbContext context, ICartService cartService, ILogger<OrderService> logger) : IOrderService
+public class OrderService(
+    ApplicationDbContext context,
+    ICartService cartService,
+    ILogger<OrderService> logger,
+    Microsoft.Extensions.Configuration.IConfiguration configuration) : IOrderService
 {
     private readonly ApplicationDbContext _context = context;
     private readonly ICartService _cartService = cartService;
     private readonly ILogger<OrderService> _logger = logger;
+    private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration = configuration;
 
     public async Task<(bool Success, string Message, OrderDto? Order)> CreateOrderFromCartAsync(int userId)
     {
@@ -43,6 +49,42 @@ public class OrderService(ApplicationDbContext context, ICartService cartService
 
         _context.Orders.Add(order);
         await _context.SaveChangesAsync(); // Save to get order ID
+
+        // Generate Razorpay Order
+        var keyId = _configuration["Razorpay:KeyId"];
+        var keySecret = _configuration["Razorpay:KeySecret"];
+        string? razorpayOrderId = null;
+
+        if (!string.IsNullOrWhiteSpace(keyId) && !keyId.Contains("placeholder") &&
+            !string.IsNullOrWhiteSpace(keySecret) && !keySecret.Contains("placeholder"))
+        {
+            try
+            {
+                var client = new Razorpay.Api.RazorpayClient(keyId, keySecret);
+                var options = new Dictionary<string, object>
+                {
+                    { "amount", (int)(order.TotalAmount * 100) }, // amount in paise
+                    { "currency", "INR" },
+                    { "receipt", $"gva_rcpt_{order.Id}" }
+                };
+                var razorpayOrder = client.Order.Create(options);
+                razorpayOrderId = razorpayOrder["id"]?.ToString();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create Razorpay order for local order {OrderId}", order.Id);
+            }
+        }
+
+        if (string.IsNullOrEmpty(razorpayOrderId))
+        {
+            razorpayOrderId = "order_mock_" + Guid.NewGuid().ToString("N")[..14];
+            _logger.LogWarning("Using mock Razorpay Order ID '{OrderId}' because Razorpay credentials are not configured.", razorpayOrderId);
+        }
+
+        order.RazorpayOrderId = razorpayOrderId;
+        _context.Orders.Update(order);
+        await _context.SaveChangesAsync();
 
         // Create order items with price/title snapshots
         var orderItems = cartItems.Select(ci => new OrderItem
@@ -70,6 +112,8 @@ public class OrderService(ApplicationDbContext context, ICartService cartService
             Id = order.Id,
             TotalAmount = order.TotalAmount,
             Status = order.Status,
+            RazorpayOrderId = order.RazorpayOrderId,
+            RazorpayKey = keyId,
             CreatedAt = order.CreatedAt,
             Items = orderItems.Select(oi => new OrderItemDto
             {
@@ -98,6 +142,7 @@ public class OrderService(ApplicationDbContext context, ICartService cartService
                 TotalAmount = o.TotalAmount,
                 Status = o.Status,
                 PaymentId = o.PaymentId,
+                RazorpayOrderId = o.RazorpayOrderId,
                 CreatedAt = o.CreatedAt,
                 Items = o.Items.Select(oi => new OrderItemDto
                 {
@@ -123,6 +168,7 @@ public class OrderService(ApplicationDbContext context, ICartService cartService
                 TotalAmount = o.TotalAmount,
                 Status = o.Status,
                 PaymentId = o.PaymentId,
+                RazorpayOrderId = o.RazorpayOrderId,
                 CreatedAt = o.CreatedAt,
                 Items = o.Items.Select(oi => new OrderItemDto
                 {
@@ -154,5 +200,63 @@ public class OrderService(ApplicationDbContext context, ICartService cartService
 
         _logger.LogInformation("Order {OrderId} cancelled by user {UserId}", orderId, userId);
         return (true, "Order cancelled successfully");
+    }
+
+    public async Task<(bool Success, string Message)> VerifyOrderPaymentAsync(int userId, VerifyPaymentDto dto)
+    {
+        var order = await _context.Orders
+            .FirstOrDefaultAsync(o => o.RazorpayOrderId == dto.RazorpayOrderId && o.UserId == userId);
+
+        if (order == null)
+            return (false, "Order not found");
+
+        if (order.Status != "Pending")
+            return (false, $"Order is already in '{order.Status}' state");
+
+        var keySecret = _configuration["Razorpay:KeySecret"];
+        bool isValid = false;
+
+        if (dto.RazorpayOrderId.StartsWith("order_mock_"))
+        {
+            isValid = true;
+            _logger.LogInformation("Verifying mock order {OrderId} as successful.", dto.RazorpayOrderId);
+        }
+        else if (!string.IsNullOrWhiteSpace(keySecret))
+        {
+            try
+            {
+                var payload = $"{dto.RazorpayOrderId}|{dto.RazorpayPaymentId}";
+                var computedSignature = HmacSha256(payload, keySecret);
+                isValid = computedSignature.Equals(dto.RazorpaySignature, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error verifying Razorpay signature for order {OrderId}", order.Id);
+            }
+        }
+
+        if (!isValid)
+        {
+            return (false, "Signature verification failed");
+        }
+
+        order.Status = "Confirmed";
+        order.PaymentId = dto.RazorpayPaymentId;
+        order.UpdatedAt = DateTime.UtcNow;
+
+        _context.Orders.Update(order);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Order {OrderId} successfully paid and verified with PaymentId {PaymentId}", order.Id, dto.RazorpayPaymentId);
+        return (true, "Payment verified successfully");
+    }
+
+    private static string HmacSha256(string payload, string secret)
+    {
+        var keyBytes = System.Text.Encoding.UTF8.GetBytes(secret);
+        var payloadBytes = System.Text.Encoding.UTF8.GetBytes(payload);
+        using var hmac = new System.Security.Cryptography.HMACSHA256(keyBytes);
+        var hashBytes = hmac.ComputeHash(payloadBytes);
+        return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
     }
 }

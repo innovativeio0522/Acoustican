@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Acoustican.Services;
+using Acoustican.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,6 +22,16 @@ public class OrderController(IOrderService orderService) : ControllerBase
             return BadRequest(new { success, message });
 
         return Ok(new { success, message, order });
+    }
+
+    [HttpPost("verify")]
+    public async Task<IActionResult> Verify([FromBody] VerifyPaymentDto dto)
+    {
+        var (success, message) = await orderService.VerifyOrderPaymentAsync(GetUserId(), dto);
+        if (!success)
+            return BadRequest(new { success, message });
+
+        return Ok(new { success, message });
     }
 
     [HttpGet]
