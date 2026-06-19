@@ -19,6 +19,39 @@ function checkAdminAuth() {
     }
 }
 
+// Toast helper for admin actions
+let toastTimer = null;
+function showToast(title, message, type = 'success') {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+
+    // Set classes based on type (success, error, info)
+    toast.className = `toast-notification show ${type}`;
+
+    // Set text
+    toast.querySelector('.toast-title').textContent = title;
+    toast.querySelector('.toast-message').textContent = message;
+
+    // Icon mapping
+    const iconEl = toast.querySelector('.toast-icon');
+    if (iconEl) {
+        if (type === 'success') {
+            iconEl.innerHTML = '<i class="fas fa-check-circle"></i>';
+        } else if (type === 'error') {
+            iconEl.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+        } else if (type === 'info') {
+            iconEl.innerHTML = '<i class="fas fa-info-circle"></i>';
+        } else {
+            iconEl.innerHTML = '<i class="fas fa-music"></i>';
+        }
+    }
+
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+    }, 4000);
+}
+
 // Helper to initialize or reinitialize DataTable on a table element.
 function initOrReinitDataTable(selector, options = {}) {
     let $el = $(selector);
@@ -201,12 +234,13 @@ async function saveHero(event) {
         });
 
         if (response.ok) {
-            alert('Hero content updated successfully!');
+            showToast('Success', 'Hero content updated successfully!', 'success');
         } else {
-            alert('Error updating hero content');
+            showToast('Error', 'Error updating hero content', 'error');
         }
     } catch (err) {
         console.error('Error saving hero:', err);
+        showToast('Error', 'Error saving hero content', 'error');
     }
 }
 
@@ -349,13 +383,14 @@ async function saveCourse() {
         if (response.ok) {
             courseModal.hide();
             loadCourses();
+            showToast('Success', 'Course saved successfully!', 'success');
         } else {
             const err = await response.json();
-            alert('Error saving course: ' + (err.message || 'Unknown error'));
+            showToast('Error', 'Error saving course: ' + (err.message || 'Unknown error'), 'error');
         }
     } catch (err) {
         console.error('Error saving course:', err);
-        alert('Error saving course');
+        showToast('Error', 'Error saving course', 'error');
     }
 }
 
@@ -385,11 +420,13 @@ async function deleteCourse(id) {
 
         if (response.ok) {
             loadCourses();
+            showToast('Success', 'Course deleted successfully!', 'success');
         } else {
-            alert('Error deleting course');
+            showToast('Error', 'Error deleting course', 'error');
         }
     } catch (err) {
         console.error('Error deleting course:', err);
+        showToast('Error', 'Error deleting course', 'error');
     }
 }
 
@@ -564,12 +601,14 @@ function showLessonForm(lesson = null) {
         document.getElementById('lessonDuration').value = lesson.durationSeconds;
         document.getElementById('lessonOrder').value = lesson.displayOrder;
         document.getElementById('lessonVideoUrl').value = lesson.videoUrl || '';
+        document.getElementById('lessonPreviewVideoId').value = lesson.previewVideoId || '';
         document.getElementById('lessonIsPreview').checked = lesson.isPreview;
         document.getElementById('lessonPublished').checked = lesson.isPublished;
     } else {
         document.getElementById('lessonModalTitle').textContent = 'Add Lesson';
         document.getElementById('lessonId').value = '';
         document.getElementById('lessonModuleId').value = selectedModule.id;
+        document.getElementById('lessonPreviewVideoId').value = '';
     }
     
     lessonModal.show();
@@ -589,6 +628,7 @@ async function saveLesson() {
         durationSeconds: parseInt(document.getElementById('lessonDuration').value),
         displayOrder: parseInt(document.getElementById('lessonOrder').value),
         videoUrl: document.getElementById('lessonVideoUrl').value,
+        previewVideoId: document.getElementById('lessonPreviewVideoId').value,
         content: '',
         isPublished: document.getElementById('lessonPublished').checked,
         isPreview: document.getElementById('lessonIsPreview').checked
@@ -610,13 +650,14 @@ async function saveLesson() {
         if (response.ok) {
             lessonModal.hide();
             loadLessons();
+            showToast('Success', 'Lesson saved successfully!', 'success');
         } else {
             const err = await response.json();
-            alert('Error saving lesson: ' + (err.message || 'Unknown error'));
+            showToast('Error', 'Error saving lesson: ' + (err.message || 'Unknown error'), 'error');
         }
     } catch (err) {
         console.error('Error saving lesson:', err);
-        alert('Error saving lesson');
+        showToast('Error', 'Error saving lesson', 'error');
     }
 }
 
@@ -646,11 +687,13 @@ async function deleteLesson(id) {
         
         if (response.ok) {
             loadLessons();
+            showToast('Success', 'Lesson deleted successfully!', 'success');
         } else {
-            alert('Error deleting lesson');
+            showToast('Error', 'Error deleting lesson', 'error');
         }
     } catch (err) {
         console.error('Error deleting lesson:', err);
+        showToast('Error', 'Error deleting lesson', 'error');
     }
 }
 
@@ -717,12 +760,14 @@ async function saveModule() {
         if (response.ok) {
             moduleModal.hide();
             loadModules();
+            showToast('Success', 'Module saved successfully!', 'success');
         } else {
             const err = await response.json();
-            alert('Error saving module: ' + (err.message || 'Unknown error'));
+            showToast('Error', 'Error saving module: ' + (err.message || 'Unknown error'), 'error');
         }
     } catch (err) {
         console.error('Error saving module:', err);
+        showToast('Error', 'Error saving module', 'error');
     }
 }
 
@@ -749,11 +794,13 @@ async function deleteModule(id) {
 
         if (response.ok) {
             loadModules();
+            showToast('Success', 'Module deleted successfully!', 'success');
         } else {
-            alert('Error deleting module');
+            showToast('Error', 'Error deleting module', 'error');
         }
     } catch (err) {
         console.error('Error deleting module:', err);
+        showToast('Error', 'Error deleting module', 'error');
     }
 }
 
@@ -767,11 +814,13 @@ async function publishModule(id) {
         });
         if (response.ok) {
             loadModules();
+            showToast('Success', 'Module published successfully!', 'success');
         } else {
-            alert('Error publishing module');
+            showToast('Error', 'Error publishing module', 'error');
         }
     } catch (err) {
         console.error('Error publishing module:', err);
+        showToast('Error', 'Error publishing module', 'error');
     }
 }
 
@@ -785,11 +834,13 @@ async function unpublishModule(id) {
         });
         if (response.ok) {
             loadModules();
+            showToast('Success', 'Module unpublished successfully!', 'success');
         } else {
-            alert('Error unpublishing module');
+            showToast('Error', 'Error unpublishing module', 'error');
         }
     } catch (err) {
         console.error('Error unpublishing module:', err);
+        showToast('Error', 'Error unpublishing module', 'error');
     }
 }
 
@@ -902,11 +953,13 @@ async function saveTestimonial() {
         if (response.ok) {
             testimonialModal.hide();
             loadTestimonials();
+            showToast('Success', 'Testimonial saved successfully!', 'success');
         } else {
-            alert('Error saving testimonial');
+            showToast('Error', 'Error saving testimonial', 'error');
         }
     } catch (err) {
         console.error('Error saving testimonial:', err);
+        showToast('Error', 'Error saving testimonial', 'error');
     }
 }
 
@@ -934,9 +987,13 @@ async function deleteTestimonial(id) {
         });
         if (response.ok) {
             loadTestimonials();
+            showToast('Success', 'Testimonial deleted successfully!', 'success');
+        } else {
+            showToast('Error', 'Error deleting testimonial', 'error');
         }
     } catch (err) {
         console.error('Error deleting testimonial:', err);
+        showToast('Error', 'Error deleting testimonial', 'error');
     }
 }
 
@@ -1038,13 +1095,14 @@ async function savePricing() {
         if (response.ok) {
             pricingModal.hide();
             loadPricing();
+            showToast('Success', 'Pricing tier saved successfully!', 'success');
         } else {
             const err = await response.json();
-            alert('Error saving pricing: ' + (err.message || 'Unknown error'));
+            showToast('Error', 'Error saving pricing: ' + (err.message || 'Unknown error'), 'error');
         }
     } catch (err) {
         console.error('Error saving pricing:', err);
-        alert('Error saving pricing');
+        showToast('Error', 'Error saving pricing tier', 'error');
     }
 }
 
@@ -1074,11 +1132,13 @@ async function deletePricing(id) {
 
         if (response.ok) {
             loadPricing();
+            showToast('Success', 'Pricing tier deleted successfully!', 'success');
         } else {
-            alert('Error deleting pricing tier');
+            showToast('Error', 'Error deleting pricing tier', 'error');
         }
     } catch (err) {
         console.error('Error deleting pricing tier:', err);
+        showToast('Error', 'Error deleting pricing tier', 'error');
     }
 }
 

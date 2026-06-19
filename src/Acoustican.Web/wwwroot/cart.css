@@ -1,5 +1,5 @@
 /* ==========================================================================
-   GuitarVerse Academy — Cart and Orders Page Styles
+   The Acoustican — Cart and Orders Page Styles
    ========================================================================== */
 
 :root {
@@ -576,6 +576,24 @@
 .btn-order-cancel:hover {
     background: var(--danger);
     color: #ffffff;
+}
+
+.btn-order-pay {
+    background: var(--accent);
+    border: none;
+    color: var(--bg-primary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 6px 16px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(245, 166, 35, 0.2);
+}
+
+.btn-order-pay:hover {
+    background: #f7b340;
+    transform: translateY(-1px);
 }
 
 .order-card-body {

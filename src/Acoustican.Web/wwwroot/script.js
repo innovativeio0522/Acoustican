@@ -1,3 +1,105 @@
+// ===== GLOBAL: SECURE VIDEO PLAYER =====
+// Defined at module scope (NOT inside DOMContentLoaded) so it is
+// immediately available to any click-handler registered later.
+window.playSecureVideo = async function(videoId) {
+    const videoModal = document.getElementById('videoModal');
+    if (!videoModal) {
+        console.error('[playSecureVideo] #videoModal not found in DOM.');
+        return;
+    }
+
+    // Stop background hero video so screen recording doesn't capture it.
+    const heroBgVideo = document.querySelector('.hero-bg-video');
+    if (heroBgVideo) {
+        heroBgVideo.dataset.bbaiWasPlaying = (!heroBgVideo.paused).toString();
+        heroBgVideo.pause();
+        heroBgVideo.style.visibility = 'hidden';
+    }
+
+    // Show modal and loading state
+    videoModal.classList.add('active');
+    const container = videoModal.querySelector('.video-iframe-container');
+    if (!container) return;
+
+    // Store original video element to restore later
+    if (!container.dataset.originalHtml) {
+        container.dataset.originalHtml = container.innerHTML;
+    }
+
+    // Handle direct video URLs (local files or absolute HTTP URLs)
+    if (videoId && (videoId.startsWith('/') || videoId.startsWith('http') || videoId.endsWith('.mp4') || videoId.endsWith('.webm'))) {
+        const iframe = container.querySelector('iframe');
+        if (iframe) iframe.remove();
+
+        let videoEl = container.querySelector('video');
+        if (!videoEl) {
+            container.innerHTML = `<video id="previewVideo" controls playsinline src="${videoId}"></video>`;
+            videoEl = container.querySelector('video');
+        } else {
+            videoEl.src = videoId;
+            videoEl.style.display = 'block';
+        }
+        if (videoEl) videoEl.play().catch(err => console.log('Autoplay blocked:', err));
+        return;
+    }
+
+    container.innerHTML = '<div style="color:#fff; display:flex; align-items:center; justify-content:center; height:100%;padding:44px ;font-family:sans-serif;">Loading secure video player...</div>';
+
+    try {
+        // ===== Hardware acceleration gate (approximation) =====
+        try {
+            if (navigator.gpu && typeof navigator.gpu.requestAdapter === 'function') {
+                const adapter = await navigator.gpu.requestAdapter();
+                if (!adapter) {
+                    container.innerHTML = `
+                    <div style="background:#000; color:#fff; padding:44px; text-align:center; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; box-sizing:border-box;">
+                        <h3 style="margin:0 0 8px 0; line-height:1.2; padding-top:2px;">Playback Blocked</h3>
+                        <p style="margin:0; opacity:.9;">To watch this video, you must enable Hardware Acceleration in your browser settings and restart your browser.</p>
+                    </div>`;
+                    return;
+                }
+            }
+        } catch (e) {
+            // capability check failed — proceed with VdoCipher anyway
+        }
+
+        const headers = { 'Content-Type': 'application/json' };
+        const token = localStorage.getItem('userToken');
+        if (token) {
+            headers['Authorization'] = 'Bearer ' + token;
+        }
+
+        const response = await fetch(`/api/videos/otp/${videoId}`, {
+            method: 'POST',
+            headers: headers
+        });
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.message || 'Failed to fetch video tokens.');
+        }
+
+        const data = await response.json();
+
+        // Create VdoCipher Secure Iframe Embed
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://player.vdocipher.com/v2/?otp=${data.otp}&playbackInfo=${data.playbackInfo}&autoplay=true`;
+        iframe.style.border = '0';
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        iframe.style.position = 'absolute';
+        iframe.style.top = '0';
+        iframe.style.left = '0';
+        iframe.allow = 'encrypted-media';
+        iframe.allowFullscreen = true;
+
+        container.innerHTML = '';
+        container.appendChild(iframe);
+    } catch (err) {
+        container.innerHTML = `<div style="color:#f87171; display:flex; align-items:center; justify-content:center; height:100%; font-family:sans-serif; text-align:center; padding:20px;">${err.message || 'Error loading secure video stream.'}</div>`;
+    }
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     const API_URL = '/api';
 
@@ -658,120 +760,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     initSyllabusToggles();
 
-
-    const videoModal = document.getElementById('videoModal');
-    const previewVideo = document.getElementById('previewVideo');
+    // ===== VIDEO MODAL SETUP =====
     const playBtn = document.querySelector('.hero-play-btn');
     const watchPreviewBtn = document.querySelector('.btn-secondary');
     const closeVideoBtn = document.querySelector('.video-modal-close');
     const videoModalBackdrop = document.querySelector('.video-modal-backdrop');
 
-    window.playSecureVideo = async function(videoId) {
-        if (!videoModal) return;
-
-        // Stop background hero video so screen recording doesn't capture it.
-        const heroBgVideo = document.querySelector('.hero-bg-video');
-        if (heroBgVideo) {
-            // remember state to restore on close
-            heroBgVideo.dataset.bbaiWasPlaying = (!heroBgVideo.paused).toString();
-            heroBgVideo.pause();
-            heroBgVideo.style.visibility = 'hidden';
-        }
-
-        // Show modal and loading state
-        videoModal.classList.add('active');
-        const container = videoModal.querySelector('.video-iframe-container');
-        if (!container) return;
-
-        // Store original video element to restore later
-        if (!container.dataset.originalHtml) {
-            container.dataset.originalHtml = container.innerHTML;
-        }
-
-        container.innerHTML = '<div style="color:#fff; display:flex; align-items:center; justify-content:center; height:100%;padding:44px ;font-family:sans-serif;">Loading secure video player...</div>';
-
-        try {
-            // ===== Hardware acceleration gate (approximation) =====
-            // Browsers don't provide a direct API for “Hardware Acceleration is ON”.
-            // We approximate using WebGPU adapter availability. If WebGPU isn't supported,
-            // we allow playback rather than incorrectly blocking.
-            try {
-                if (navigator.gpu && typeof navigator.gpu.requestAdapter === 'function') {
-                    const adapter = await navigator.gpu.requestAdapter();
-                    if (!adapter) {
-                        container.innerHTML = `
-                    <div style="background:#000; color:#fff; padding:44px; text-align:center; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; box-sizing:border-box;">
-                                <h3 style="margin:0 0 8px 0; line-height:1.2; padding-top:2px;">Playback Blocked</h3>
-                                <p style="margin:0; opacity:.9;">To watch this video, you must enable Hardware Acceleration in your browser settings and restart your browser.</p>
-                            </div>`;
-                        return;
-                    }
-                }
-            } catch (e) {
-                // If the capability check fails, still show the message without hard-blocking the UI.
-                container.innerHTML = `
-                    <div style="background:#000; color:#fff; padding:44px; text-align:center; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; box-sizing:border-box;">
-                        <h3 style="margin:0 0 8px 0; line-height:1.2; padding-top:2px;">Playback Blocked</h3>
-                        <p style="margin:0; opacity:.9;">To watch this video, you must enable Hardware Acceleration in your browser settings and restart your browser.</p>
-                    </div>`;
-                return;
-            }
-
-            const headers = { 'Content-Type': 'application/json' };
-            const token = localStorage.getItem('userToken');
-            if (token) {
-                headers['Authorization'] = 'Bearer ' + token;
-            }
-
-            const response = await fetch(`/api/videos/otp/${videoId}`, {
-                method: 'POST',
-                headers: headers
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.message || 'Failed to fetch video tokens.');
-            }
-
-            const data = await response.json();
-
-            // Create VdoCipher Secure Iframe Embed
-            const iframe = document.createElement('iframe');
-            iframe.src = `https://player.vdocipher.com/v2/?otp=${data.otp}&playbackInfo=${data.playbackInfo}&autoplay=true`;
-            iframe.style.border = '0';
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.style.position = 'absolute';
-            iframe.style.top = '0';
-            iframe.style.left = '0';
-            iframe.allow = 'encrypted-media';
-            iframe.allowFullscreen = true;
-
-            container.innerHTML = '';
-            container.appendChild(iframe);
-        } catch (err) {
-            container.innerHTML = `<div style="color:#f87171; display:flex; align-items:center; justify-content:center; height:100%; font-family:sans-serif; text-align:center; padding:20px;">${err.message || 'Error loading secure video stream.'}</div>`;
-        }
-    };
-
     function openVideoModal(e) {
         if (e) e.preventDefault();
-        
-        // vdoCipherTestVideoId must be set by the server/Razor view (e.g. window.vdoCipherTestVideoId = "@Model.Hero.PreviewVideoId")
-        // It is NOT hardcoded here — it must come from the database via the CMS.
+
+        // vdoCipherTestVideoId must be set by the server/Razor view
         const testVideoId = window.vdoCipherTestVideoId;
         if (testVideoId) {
             window.playSecureVideo(testVideoId);
             return;
         }
 
-        if (videoModal && previewVideo) {
+        // Fallback: open the modal with whatever <video> is inside it
+        const videoModal = document.getElementById('videoModal');
+        const previewVideo = document.getElementById('previewVideo');
+        if (videoModal) {
             videoModal.classList.add('active');
-            previewVideo.play().catch(err => console.log('Autoplay blocked:', err));
+            if (previewVideo) previewVideo.play().catch(err => console.log('Autoplay blocked:', err));
         }
     }
 
     function closeVideoModal() {
+        const videoModal = document.getElementById('videoModal');
         if (videoModal) {
             videoModal.classList.remove('active');
 
@@ -788,9 +803,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const container = videoModal.querySelector('.video-iframe-container');
             if (container && container.dataset.originalHtml) {
                 container.innerHTML = container.dataset.originalHtml;
-            } else if (previewVideo) {
-                previewVideo.pause();
-                previewVideo.currentTime = 0;
+            } else {
+                const previewVideo = videoModal.querySelector('video');
+                if (previewVideo) {
+                    previewVideo.pause();
+                    previewVideo.currentTime = 0;
+                }
             }
         }
     }
@@ -831,7 +849,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             e.preventDefault();
-            let planName = 'GuitarVerse Masterclass';
+            let planName = 'The Acoustican Masterclass';
 
             const pricingCard = btn.closest('.pricing-card');
             const courseCard = btn.closest('.course-card');
@@ -897,7 +915,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             closeEnrollModal();
 
             // Extract plan/course name from the selected plan text
-            let planName = 'GuitarVerse Masterclass';
+            let planName = 'The Acoustican Masterclass';
             const selectedSpan = selectedPlanText ? selectedPlanText.querySelector('span') : null;
             if (selectedSpan) {
                 planName = selectedSpan.textContent.trim();
@@ -921,7 +939,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Display Toast notification for Enrollment
             if (toast) {
                 toast.querySelector('.toast-title').textContent = 'Success';
-                toast.querySelector('.toast-message').textContent = 'Enrollment Successful! Welcome to GuitarVerse.';
+                toast.querySelector('.toast-message').textContent = 'Enrollment Successful! Welcome to The Acoustican.';
                 toast.classList.add('show');
                 setTimeout(() => {
                     toast.classList.remove('show');
@@ -1040,7 +1058,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             e.stopPropagation();
 
             const slide = playBtn.closest('.mpw-slide');
-            const title = slide?.querySelector('.mpw-title')?.textContent || 'GuitarVerse Module';
+            const title = slide?.querySelector('.mpw-title')?.textContent || 'The Acoustican Module';
 
             // If we have a preview video id from server, play it in the secure modal.
             // (Index.cshtml already sets: window.vdoCipherTestVideoId = "@(Model.Hero?.PreviewVideoId)")

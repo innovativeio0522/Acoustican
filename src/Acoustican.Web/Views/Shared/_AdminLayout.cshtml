@@ -462,6 +462,135 @@
             color: var(--muted-text);
             font-size: 0.9rem;
         }
+
+        /* Toast Notifications */
+        .toast-notification {
+            position: fixed;
+            bottom: 30px;
+            right: -450px;
+            background: rgba(22, 22, 26, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(245, 166, 35, 0.25);
+            border-radius: 16px;
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(245, 166, 35, 0.08);
+            transition: right 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+            z-index: 3000;
+            overflow: hidden;
+            opacity: 0;
+            width: 380px;
+        }
+
+        .toast-notification.show {
+            right: 30px;
+            opacity: 1;
+        }
+
+        .toast-icon {
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            filter: drop-shadow(0 0 8px rgba(245, 166, 35, 0.4));
+        }
+
+        .toast-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+        }
+
+        .toast-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: 0.5px;
+        }
+
+        .toast-message {
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: var(--muted-text);
+        }
+
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, var(--primary));
+            transform-origin: left;
+            display: none;
+        }
+
+        .toast-notification.show .toast-progress {
+            display: block;
+            animation: toastProgress 4s linear forwards;
+        }
+
+        /* Toast Colors */
+        .toast-notification.success {
+            border-color: rgba(46, 204, 113, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(46, 204, 113, 0.08);
+        }
+        .toast-notification.success .toast-icon,
+        .toast-notification.success .toast-title {
+            color: #2ecc71;
+            filter: drop-shadow(0 0 8px rgba(46, 204, 113, 0.4));
+        }
+        .toast-notification.success .toast-progress {
+            background: linear-gradient(90deg, transparent, #2ecc71);
+        }
+
+        .toast-notification.error {
+            border-color: rgba(231, 76, 60, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(231, 76, 60, 0.08);
+        }
+        .toast-notification.error .toast-icon,
+        .toast-notification.error .toast-title {
+            color: #e74c3c;
+            filter: drop-shadow(0 0 8px rgba(231, 76, 60, 0.4));
+        }
+        .toast-notification.error .toast-progress {
+            background: linear-gradient(90deg, transparent, #e74c3c);
+        }
+
+        .toast-notification.info {
+            border-color: rgba(52, 152, 219, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(52, 152, 219, 0.08);
+        }
+        .toast-notification.info .toast-icon,
+        .toast-notification.info .toast-title {
+            color: #3498db;
+            filter: drop-shadow(0 0 8px rgba(52, 152, 219, 0.4));
+        }
+        .toast-notification.info .toast-progress {
+            background: linear-gradient(90deg, transparent, #3498db);
+        }
+
+        @keyframes toastProgress {
+            0% {
+                transform: scaleX(1);
+            }
+            100% {
+                transform: scaleX(0);
+            }
+        }
+
+        @media (max-width: 576px) {
+            .toast-notification {
+                width: calc(100% - 32px);
+                left: 16px;
+                right: 16px;
+            }
+        }
     </style>
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -501,11 +630,7 @@
                         <i class="fas fa-star me-2"></i> Testimonials
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "pricing" ? "active" : "")" href="/admin/pricing">
-                        <i class="fas fa-tags me-2"></i> Pricing
-                    </a>
-                </li>
+
                 <li class="nav-item">
                     <a class="nav-link @(ViewData["ActivePage"]?.ToString() == "hero" ? "active" : "")" href="/admin/hero">
                         <i class="fas fa-image me-2"></i> Hero Section
@@ -524,6 +649,16 @@
             </ul>
         </div>
     </nav>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast-notification" id="toast">
+        <div class="toast-icon">🎸</div>
+        <div class="toast-content">
+            <div class="toast-title">Success</div>
+            <div class="toast-message">Operation completed successfully.</div>
+        </div>
+        <div class="toast-progress"></div>
+    </div>
 
     <main class="main-content">
         @RenderBody()

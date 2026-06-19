@@ -146,7 +146,7 @@ public static class DbInitializer
                         ModuleId = newModule1.Id,
                         Title = "How to Hold Your Guitar",
                         Description = "Proper posture and holding technique",
-                        VideoUrl = null,
+                        VideoUrl = null, // Admin must set a VdoCipher Video ID via admin panel
                         ThumbnailUrl = null,
                         DurationSeconds = 600,
                         DisplayOrder = 1,
@@ -162,7 +162,7 @@ public static class DbInitializer
                         ModuleId = newModule1.Id,
                         Title = "Tuning Your Guitar",
                         Description = "Standard tuning and how to tune your instrument",
-                        VideoUrl = null,
+                        VideoUrl = null, // Admin must set a VdoCipher Video ID via admin panel
                         ThumbnailUrl = null,
                         DurationSeconds = 480,
                         DisplayOrder = 2,
@@ -177,7 +177,7 @@ public static class DbInitializer
                         ModuleId = newModule2.Id,
                         Title = "G, C, and D Chords",
                         Description = "Learn your first three open chords",
-                        VideoUrl = null,
+                        VideoUrl = null, // Admin must set a VdoCipher Video ID via admin panel
                         ThumbnailUrl = null,
                         DurationSeconds = 1200,
                         DisplayOrder = 1,
@@ -192,7 +192,7 @@ public static class DbInitializer
                         ModuleId = newModule2.Id,
                         Title = "Basic Strumming Patterns",
                         Description = "Get started with rhythmic playing",
-                        VideoUrl = null,
+                        VideoUrl = null, // Admin must set a VdoCipher Video ID via admin panel
                         ThumbnailUrl = null,
                         DurationSeconds = 900,
                         DisplayOrder = 2,
@@ -215,6 +215,19 @@ public static class DbInitializer
                     existingHero.PreviewVideoId = "c2d8e1d68ba5449343adb7a66f4c6ed3";
                     context.SaveChanges();
                     Console.WriteLine("[DbInitializer] Updated existing HeroContent with default PreviewVideoId.");
+                }
+
+                // Clean up any lessons that still have the legacy local video path.
+                // Admins must set a proper VdoCipher Video ID via the admin panel.
+                var lessonsWithLocalPath = context.Lessons.Where(l => l.VideoUrl != null && l.VideoUrl.StartsWith("/videos/")).ToList();
+                if (lessonsWithLocalPath.Any())
+                {
+                    foreach (var lesson in lessonsWithLocalPath)
+                    {
+                        lesson.VideoUrl = null;
+                    }
+                    context.SaveChanges();
+                    Console.WriteLine("[DbInitializer] Cleared legacy local video paths from lessons. Admin must set VdoCipher IDs.");
                 }
 
                 Console.WriteLine("[DbInitializer] Database already seeded — skipping.");
@@ -474,7 +487,7 @@ public static class DbInitializer
             ModuleId = module1.Id,
             Title = "How to Hold Your Guitar",
             Description = "Proper posture and holding technique",
-            VideoUrl = null,
+            VideoUrl = "/videos/5467-184226823_medium.mp4",
             ThumbnailUrl = null,
             DurationSeconds = 600,
             DisplayOrder = 1,
@@ -490,7 +503,7 @@ public static class DbInitializer
             ModuleId = module1.Id,
             Title = "Tuning Your Guitar",
             Description = "Standard tuning and how to tune your instrument",
-            VideoUrl = null,
+            VideoUrl = "/videos/5467-184226823_medium.mp4",
             ThumbnailUrl = null,
             DurationSeconds = 480,
             DisplayOrder = 2,
@@ -506,7 +519,7 @@ public static class DbInitializer
             ModuleId = module2.Id,
             Title = "G, C, and D Chords",
             Description = "Learn your first three open chords",
-            VideoUrl = null,
+            VideoUrl = "/videos/5467-184226823_medium.mp4",
             ThumbnailUrl = null,
             DurationSeconds = 1200,
             DisplayOrder = 1,
@@ -521,7 +534,7 @@ public static class DbInitializer
             ModuleId = module2.Id,
             Title = "Basic Strumming Patterns",
             Description = "Get started with rhythmic playing",
-            VideoUrl = null,
+            VideoUrl = "/videos/5467-184226823_medium.mp4",
             ThumbnailUrl = null,
             DurationSeconds = 900,
             DisplayOrder = 2,

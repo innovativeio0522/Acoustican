@@ -141,7 +141,11 @@
                                     {
                                         @foreach (var lesson in module.Lessons)
                                         {
-                                            <div class="module-lesson">
+                                            <div class="module-lesson" 
+                                                 data-lesson-id="@lesson.Id" 
+                                                 data-video-url="@lesson.VideoUrl" 
+                                                 data-preview-video-id="@lesson.PreviewVideoId"
+                                                 data-is-preview="@(lesson.IsPreview.ToString().ToLower())">
                                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="lesson-icon">
                                                     <path d="M3 5C3 3.89543 3.89543 3 5 3H15C16.1046 3 17 3.89543 17 5V15C17 16.1046 16.1046 17 15 17H5C3.89543 17 3 16.1046 3 15V5Z" stroke="currentColor" stroke-width="1.5"/>
                                                     <path d="M7.5 7.5L12.5 10L7.5 12.5V7.5Z" fill="currentColor"/>
@@ -149,7 +153,16 @@
                                                 <span class="lesson-title">@lesson.Title</span>
                                                 @if (lesson.IsPreview)
                                                 {
-                                                    <span class="lesson-preview">Preview</span>
+                                                    <span class="lesson-free-preview">
+                                                        <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="2,1 9,5 2,9"/></svg>
+                                                        Free Preview
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="lesson-lock-badge">
+                                                        🔒 <span class="lock-label">Enroll to Watch</span>
+                                                    </span>
                                                 }
                                                 <span class="lesson-duration">@((lesson.DurationSeconds / 60).ToString("00")):@((lesson.DurationSeconds % 60).ToString("00"))</span>
                                             </div>
@@ -197,30 +210,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             const courseTitle = "@Html.Raw(Model.Title)";
             const ctaButtons = document.querySelectorAll('.course-btn');
-            const moduleHeaders = document.querySelectorAll('.module-header');
 
-            moduleHeaders.forEach(header => {
-                header.addEventListener('click', function() {
-                    const module = this.closest('.course-module');
-                    module.classList.toggle('open');
-                });
-            });
-
-            const expandBtn = document.querySelector('.expand-all-btn');
-            let allOpen = false;
-            if (expandBtn) {
-                expandBtn.addEventListener('click', function() {
-                    allOpen = !allOpen;
-                    const modules = document.querySelectorAll('.course-module');
-                    modules.forEach(mod => {
-                        if (allOpen) mod.classList.add('open');
-                        else mod.classList.remove('open');
-                    });
-                    expandBtn.textContent = allOpen ? "Collapse all sections" : "Expand all sections";
-                });
-            }
-
-            // ===== PREMIUM DYNAMIC COURSE ENROLLMENT & LESSON TRACKING =====
+            // ===== PREMIUM DYNAMIC COURSE ENROLLMENT & LESSON PLAYBACK =====
             function checkEnrollment() {
                 const enrolledCourses = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
                 const hasSub = localStorage.getItem('hasActiveSubscription') === 'true';
@@ -238,63 +229,122 @@
                             document.querySelector('.course-modules')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         });
                     });
-                    
-                    // Enable tracking of completed lessons
-                    enableLessonTracking();
                 }
             }
 
-            function enableLessonTracking() {
+            function setupLessons() {
                 const lessons = document.querySelectorAll('.module-lesson');
                 const completedLessons = JSON.parse(localStorage.getItem('completedLessons') || '{}');
 
                 const playSvg = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="lesson-icon"><path d="M3 5C3 3.89543 3.89543 3 5 3H15C16.1046 3 17 3.89543 17 5V15C17 16.1046 16.1046 17 15 17H5C3.89543 17 3 16.1046 3 15V5Z" stroke="currentColor" stroke-width="1.5"/><path d="M7.5 7.5L12.5 10L7.5 12.5V7.5Z" fill="currentColor"/></svg>`;
                 const checkSvg = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="lesson-icon completed-icon"><path d="M3 5C3 3.89543 3.89543 3 5 3H15C16.1046 3 17 3.89543 17 5V15C17 16.1046 16.1046 17 15 17H5C3.89543 17 3 16.1046 3 15V5Z" stroke="#4ade80" stroke-width="1.5"/><path d="M6.5 10L9 12.5L14 7.5" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
+                const enrolledCourses = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
+                const hasSub = localStorage.getItem('hasActiveSubscription') === 'true';
+                const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+                const isAdmin = userData && userData.role === 'Admin';
+                const isEnrolled = hasSub || enrolledCourses.includes(courseTitle) || isAdmin;
+
                 lessons.forEach((lesson) => {
                     const titleEl = lesson.querySelector('.lesson-title');
                     if (!titleEl) return;
                     const lessonTitle = titleEl.textContent.trim();
                     const lessonKey = `${courseTitle} - ${lessonTitle}`;
+                    const videoUrl = lesson.dataset.videoUrl;
+                    const isPreview = lesson.dataset.isPreview === 'true';
 
-                    // Set initial UI state
-                    if (completedLessons[lessonKey]) {
-                        lesson.classList.add('completed');
-                        const oldIcon = lesson.querySelector('.lesson-icon');
-                        if (oldIcon) oldIcon.outerHTML = checkSvg;
+                    // ── Apply visual state based on enrollment ──────────────
+                    if (isEnrolled) {
+                        // Enrolled: all lessons unlocked, hide lock badges
+                        lesson.classList.remove('locked');
+                        lesson.classList.add('enrolled');
+                        lesson.style.cursor = 'pointer';
+
+                        // Mark completed lessons
+                        if (completedLessons[lessonKey]) {
+                            lesson.classList.add('completed');
+                            const oldIcon = lesson.querySelector('.lesson-icon');
+                            if (oldIcon) oldIcon.outerHTML = checkSvg;
+                        }
+                    } else {
+                        // Not enrolled: preview lessons clickable, others locked
+                        if (isPreview) {
+                            lesson.classList.remove('locked');
+                            lesson.style.cursor = 'pointer';
+                        } else {
+                            lesson.classList.add('locked');
+                            lesson.style.cursor = 'default';
+                        }
                     }
 
-                    // Add dynamic check-off toggler
-                    lesson.style.cursor = 'pointer';
+                    // ── Attach click handler (once) ─────────────────────────
                     if (!lesson.dataset.hasListener) {
                         lesson.dataset.hasListener = 'true';
                         lesson.addEventListener('click', function(e) {
-                            const isCompleted = lesson.classList.contains('completed');
-                            if (isCompleted) {
-                                lesson.classList.remove('completed');
-                                const oldIcon = lesson.querySelector('.lesson-icon');
-                                if (oldIcon) oldIcon.outerHTML = playSvg;
-                                delete completedLessons[lessonKey];
-                            } else {
-                                lesson.classList.add('completed');
-                                const oldIcon = lesson.querySelector('.lesson-icon');
-                                if (oldIcon) oldIcon.outerHTML = checkSvg;
-                                completedLessons[lessonKey] = true;
+                            // Re-check enrollment at click time
+                            const latestEnrolled = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
+                            const latestHasSub = localStorage.getItem('hasActiveSubscription') === 'true';
+                            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+                            const isAdmin = userData && userData.role === 'Admin';
+                            const currentlyEnrolled = latestHasSub || latestEnrolled.includes(courseTitle) || isAdmin;
+
+                            const iconClick = e.target.closest('.lesson-icon');
+
+                            if (iconClick) {
+                                // ── Toggle completion (enrolled only) ────────
+                                if (currentlyEnrolled) {
+                                    const isCompleted = lesson.classList.contains('completed');
+                                    if (isCompleted) {
+                                        lesson.classList.remove('completed');
+                                        const oldIcon = lesson.querySelector('.lesson-icon');
+                                        if (oldIcon) oldIcon.outerHTML = playSvg;
+                                        delete completedLessons[lessonKey];
+                                    } else {
+                                        lesson.classList.add('completed');
+                                        const oldIcon = lesson.querySelector('.lesson-icon');
+                                        if (oldIcon) oldIcon.outerHTML = checkSvg;
+                                        completedLessons[lessonKey] = true;
+                                    }
+                                    localStorage.setItem('completedLessons', JSON.stringify(completedLessons));
+
+                                    const totalLessons = lessons.length;
+                                    const completedCount = Array.from(lessons).filter(l => l.classList.contains('completed')).length;
+                                    const progress = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+                                    const courseProgress = JSON.parse(localStorage.getItem('courseProgress') || '{}');
+                                    courseProgress[courseTitle] = progress;
+                                    localStorage.setItem('courseProgress', JSON.stringify(courseProgress));
+
+                                    showCompletionToast(lessonTitle, !isCompleted);
+                                }
+                                return;
                             }
-                            localStorage.setItem('completedLessons', JSON.stringify(completedLessons));
 
-                            // Calculate progress percentage
-                            const totalLessons = lessons.length;
-                            const completedCount = Array.from(lessons).filter(l => l.classList.contains('completed')).length;
-                            const progress = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
-
-                            // Save to courseProgress
-                            const courseProgress = JSON.parse(localStorage.getItem('courseProgress') || '{}');
-                            courseProgress[courseTitle] = progress;
-                            localStorage.setItem('courseProgress', JSON.stringify(courseProgress));
-
-                            // Show visual completion toast
-                            showCompletionToast(lessonTitle, !isCompleted);
+                            // ── Play video ────────────────────────────────────
+                            if (currentlyEnrolled) {
+                                if (videoUrl) {
+                                    window.playSecureVideo(videoUrl);
+                                } else {
+                                    showCompletionToast('No video configured for this lesson yet.', false);
+                                }
+                            } else if (isPreview) {
+                                const previewVidId = lesson.dataset.previewVideoId;
+                                if (previewVidId) {
+                                    window.playSecureVideo(previewVidId);
+                                } else {
+                                    showCompletionToast('No preview video configured for this lesson yet.', false);
+                                }
+                            } else {
+                                // ── Locked: shake the lock badge ──────────────
+                                const lockBadge = lesson.querySelector('.lesson-lock-badge');
+                                if (lockBadge) {
+                                    lockBadge.style.animation = 'none';
+                                    lockBadge.offsetWidth; // reflow
+                                    lockBadge.style.animation = 'lockShake 0.4s ease';
+                                    setTimeout(() => { lockBadge.style.animation = ''; }, 450);
+                                }
+                                // Scroll the enroll button into view as a hint
+                                document.querySelector('.course-btn')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
                         });
                     }
                 });
@@ -314,11 +364,13 @@
 
             // Run initial check
             checkEnrollment();
+            setupLessons();
 
             // Listen to layout-level enroll event
             window.addEventListener('course-enrolled', function(e) {
                 if (e.detail && e.detail.courseName === courseTitle) {
                     checkEnrollment();
+                    setupLessons();
                 }
             });
         });

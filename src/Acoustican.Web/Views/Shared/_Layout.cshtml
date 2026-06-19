@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <title>@ViewData["Title"] — GuitarVerse Academy</title>
+    <title>@ViewData["Title"] — The Acoustican</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap"
           rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
@@ -24,7 +24,7 @@
         <div class="nav-container">
             <a href="/" class="logo">
                 <div class="logo-icon">🎸</div>
-                GuitarVerse Academy
+                The Acoustican
             </a>
             <ul class="nav-links">
                 <li><a href="/courses" class='@(ViewData["ActivePage"]?.ToString() == "Courses" ? "nav-active" : "")'>Courses</a></li>
@@ -81,7 +81,7 @@
             <div class="footer-brand">
                 <a href="/" class="logo">
                     <div class="logo-icon">🎸</div>
-                    GuitarVerse Academy
+                    The Acoustican
                 </a>
                 <p>Master your instrument with the world's most immersive online guitar education platform.</p>
                 <div class="footer-social">
@@ -114,7 +114,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>© @DateTime.Now.Year GuitarVerse Academy. All rights reserved.</p>
+            <p>© @DateTime.Now.Year The Acoustican. All rights reserved.</p>
             <p>Made with ❤️ for Musicians</p>
         </div>
     </footer>
@@ -239,7 +239,7 @@
         <div class="enroll-modal-backdrop"></div>
         <div class="enroll-modal-content">
             <button class="enroll-modal-close">✕</button>
-            <h3>Join GuitarVerse</h3>
+            <h3>Join The Acoustican</h3>
             <p class="selected-plan-text">Plan Selected: <span>Pro Track</span></p>
             <form id="enrollForm">
                 <div class="form-group">
@@ -248,7 +248,7 @@
                 </div>
                 <div class="form-group">
                     <label for="enrollEmail">Email Address</label>
-                    <input type="email" id="enrollEmail" required placeholder="e.g. jimi@guitarverse.com">
+                    <input type="email" id="enrollEmail" required placeholder="e.g. jimi@theacoustican.com">
                 </div>
                 <div class="form-group">
                     <label for="enrollPhone">Phone Number</label>
@@ -265,7 +265,7 @@
         <div class="toast-icon">🎸</div>
         <div class="toast-content">
             <div class="toast-title">Success</div>
-            <div class="toast-message">Enrollment Successful! Welcome to GuitarVerse.</div>
+            <div class="toast-message">Enrollment Successful! Welcome to The Acoustican.</div>
         </div>
         <div class="toast-progress"></div>
     </div>
@@ -297,8 +297,19 @@
                 </div>
                 <div class="cart-drawer-actions">
                     <a href="/cart" class="btn-view-cart">View Cart</a>
-                    <button type="button" class="btn-checkout-fast" onclick="window.location.href='/cart?checkout=true'">Checkout</button>
+                    <button type="button" class="btn-checkout-fast" onclick="window.location.href='/cart'">Checkout</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIDEO LIGHTBOX MODAL -->
+    <div class="video-modal" id="videoModal">
+        <div class="video-modal-backdrop"></div>
+        <div class="video-modal-content">
+            <button class="video-modal-close">✕</button>
+            <div class="video-iframe-container">
+                <video id="previewVideo" controls playsinline src="/videos/5467-184226823_medium.mp4"></video>
             </div>
         </div>
     </div>
@@ -308,6 +319,7 @@
     <script src="/js/ScrollTrigger.min.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/cart.js?v=@DateTime.UtcNow.Ticks"></script>
+    <script src="/script.js?v=@DateTime.UtcNow.Ticks"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
 </body>
