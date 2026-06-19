@@ -514,19 +514,24 @@ document.addEventListener('DOMContentLoaded', () => {
     window.handleLogout = function() {
         localStorage.removeItem('userToken');
         localStorage.removeItem('userData');
+        localStorage.removeItem('enrolledCourses');
+        localStorage.removeItem('hasActiveSubscription');
+        localStorage.removeItem('pendingTierId');
+        localStorage.removeItem('pendingTierName');
         window.updateAuthUI();
         window.location.reload();
     };
 
     function updateCourseButtonsUI(isSubscribed) {
-        const enrolledCourses = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
+        const token = localStorage.getItem('userToken');
+        const enrolledCourses = token ? JSON.parse(localStorage.getItem('enrolledCourses') || '[]') : [];
         const courseButtons = document.querySelectorAll('.course-btn');
         
         courseButtons.forEach(btn => {
             const title = btn.getAttribute('data-course-title') || '';
             const trimmedTitle = title.trim();
             
-            const isEnrolled = isSubscribed || (trimmedTitle && enrolledCourses.includes(trimmedTitle));
+            const isEnrolled = !!token && (isSubscribed || (trimmedTitle && enrolledCourses.includes(trimmedTitle)));
             
             if (isEnrolled) {
                 btn.textContent = "Resume Learning";
@@ -601,9 +606,34 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (err) {
                 console.error('Failed to fetch subscription info', err);
             }
+
+            // Sync enrolled courses from confirmed orders
+            try {
+                const ordersResponse = await fetch(`${API_URL}/orders`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (ordersResponse.ok) {
+                    const data = await ordersResponse.json();
+                    const orders = data.orders || [];
+                    const enrolled = [];
+                    orders.forEach(order => {
+                        if (order.status === 'Confirmed' && order.items) {
+                            order.items.forEach(item => {
+                                if (item.courseTitle) {
+                                    enrolled.push(item.courseTitle.trim());
+                                }
+                            });
+                        }
+                    });
+                    localStorage.setItem('enrolledCourses', JSON.stringify(enrolled));
+                }
+            } catch (err) {
+                console.error('Failed to sync enrolled courses from orders', err);
+            }
         } else {
             if (userProfile) userProfile.classList.add('d-none');
             if (authActions) authActions.classList.remove('d-none');
+            localStorage.removeItem('enrolledCourses');
         }
 
         if (isSubscribed) {

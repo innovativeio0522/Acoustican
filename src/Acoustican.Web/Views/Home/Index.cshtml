@@ -240,7 +240,7 @@
 <section class="testimonials-section">
     <div class="testimonials-header reveal">
         <h2>Hear From Our Students</h2>
-        <p>Thousands of guitarists have transformed their playing with GuitarVerse Academy.</p>
+        <p>Thousands of guitarists have transformed their playing with The Acoustican.</p>
     </div>
     <div class="testimonials-slider-container reveal">
         <div class="testimonials-track">
@@ -274,7 +274,7 @@
         <div class="about-content reveal">
             <div class="about-badge">Our Story</div>
             <h2 class="about-title">Immersive Guitar Education, <span>Crafted by Masters</span></h2>
-            <p class="about-desc">Founded in 2024, GuitarVerse Academy was born from a simple mission: to bridge the gap between amateur chord strumming and professional stage mastery. We bring together world-class guitarists, cinematic filming quality, and interactive practice tools to deliver a studio-grade learning experience right to your home.</p>
+            <p class="about-desc">Founded in 2024, The Acoustican was born from a simple mission: to bridge the gap between amateur chord strumming and professional stage mastery. We bring together world-class guitarists, cinematic filming quality, and interactive practice tools to deliver a studio-grade learning experience right to your home.</p>
             <p class="about-desc">Our instructors are seasoned touring professionals, session musicians, and conservatory graduates who don't just teach tabs—they teach you how to feel, write, and command your sound.</p>
         </div>
         <div class="about-stats reveal-stagger">
@@ -317,7 +317,7 @@
                     <div class="detail-icon">✉️</div>
                     <div class="detail-text">
                         <h4>Support Hub</h4>
-                        <p>support@guitarverse.com</p>
+                        <p>support@theacoustican.com</p>
                     </div>
                 </div>
                 <div class="contact-detail-item">
@@ -339,7 +339,7 @@
                     </div>
                     <div class="form-group">
                         <label for="contactEmail">Email</label>
-                        <input type="email" id="contactEmail" required placeholder="jimi@guitarverse.com">
+                        <input type="email" id="contactEmail" required placeholder="jimi@theacoustican.com">
                     </div>
                 </div>
                 <div class="form-group">
@@ -362,21 +362,8 @@
     </div>
 </section>
 
-<!-- VIDEO LIGHTBOX MODAL -->
-<div class="video-modal" id="videoModal">
-    <div class="video-modal-backdrop"></div>
-    <div class="video-modal-content">
-        <button class="video-modal-close">✕</button>
-        <div class="video-iframe-container">
-            <video id="previewVideo" controls playsinline
-                   src="@(Model.Hero?.BackgroundVideoUrl ?? "/videos/5467-184226823_medium.mp4")"></video>
-        </div>
-    </div>
-</div>
-
 @section Scripts {
     <script>
         window.vdoCipherTestVideoId = "@(Model.Hero?.PreviewVideoId)";
     </script>
-    <script src="/script.js?v=@DateTime.UtcNow.Ticks"></script>
 }

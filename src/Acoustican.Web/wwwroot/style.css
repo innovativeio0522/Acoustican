@@ -278,7 +278,7 @@ body {
 
 .auth-input-icon {
     position: absolute;
-    left: 13px;
+    right: 13px;
     top: 50%;
     transform: translateY(-50%);
     color: #44444e;
@@ -294,7 +294,7 @@ body {
     width: 100%;
     background: #0e0e12;
     border: 1px solid #2a2a35;
-    padding: 11px 14px 11px 38px;
+    padding: 11px 38px 11px 14px;
     border-radius: 10px;
     color: var(--text-primary);
     font-size: 0.9rem;
@@ -3659,10 +3659,73 @@ body.gsap-ready .hero-visual {
     flex: 1;
 }
 
-.lesson-preview {
-    color: var(--accent);
+.lesson-free-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(74, 222, 128, 0.12);
+    color: #4ade80;
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
     font-weight: 600;
-    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    transition: background 0.2s, border-color 0.2s;
+    cursor: pointer;
+}
+
+.module-lesson:hover .lesson-free-preview {
+    background: rgba(74, 222, 128, 0.2);
+    border-color: rgba(74, 222, 128, 0.5);
+}
+
+.lesson-lock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+/* When user is enrolled, hide the lock badge */
+.module-lesson.enrolled .lesson-lock-badge {
+    display: none;
+}
+
+/* When user is enrolled, dim the free-preview badge (it's now just a label) */
+.module-lesson.enrolled .lesson-free-preview {
+    background: rgba(74, 222, 128, 0.06);
+    border-color: rgba(74, 222, 128, 0.15);
+    color: rgba(74, 222, 128, 0.6);
+    cursor: default;
+}
+
+/* Locked lesson row — dimmed, no pointer */
+.module-lesson.locked {
+    opacity: 0.65;
+    cursor: default !important;
+}
+
+.module-lesson.locked:hover {
+    background: transparent;
+}
+
+@keyframes lockShake {
+    0%   { transform: translateX(0); }
+    20%  { transform: translateX(-5px); }
+    40%  { transform: translateX(5px); }
+    60%  { transform: translateX(-4px); }
+    80%  { transform: translateX(4px); }
+    100% { transform: translateX(0); }
 }
 
 .lesson-duration {

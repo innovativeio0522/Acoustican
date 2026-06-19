@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════
- * GuitarVerse Academy — Cart Module
+ * The Acoustican — Cart Module
  * Handles cart state, API calls, badge, toasts, and drawer
  * ═══════════════════════════════════════════════════════════
  */
@@ -197,7 +197,6 @@
                 if (data.success) {
                     updateBadge(data.cartCount);
                     showCartToast('Added to Cart', courseTitle, 'success');
-                    openDrawer();
                 } else {
                     showCartToast('Already in Cart', data.message, 'info');
                 }
@@ -212,7 +211,6 @@
             if (added) {
                 updateBadge(getGuestCart().length);
                 showCartToast('Added to Cart', courseTitle, 'success');
-                openDrawer();
             } else {
                 showCartToast('Already in Cart', 'This course is already in your cart', 'info');
             }

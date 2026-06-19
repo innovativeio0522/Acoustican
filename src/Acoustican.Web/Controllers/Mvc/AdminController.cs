@@ -43,8 +43,7 @@ public class AdminController : Controller
     [HttpGet("pricing")]
     public IActionResult Pricing()
     {
-        ViewData["ActivePage"] = "pricing";
-        return View();
+        return RedirectToAction("Dashboard");
     }
 
     [HttpGet("hero")]

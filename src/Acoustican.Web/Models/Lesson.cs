@@ -6,7 +6,8 @@ public class Lesson
     public int ModuleId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public string? VideoUrl { get; set; }
+    public string? VideoUrl { get; set; }       // Full lesson — enrolled users only
+    public string? PreviewVideoId { get; set; }  // Short teaser — anyone can watch
     public string? ThumbnailUrl { get; set; }
     public int DurationSeconds { get; set; }
     public int DisplayOrder { get; set; } = 0;

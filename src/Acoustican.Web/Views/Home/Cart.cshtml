@@ -456,14 +456,6 @@
             // Run initial load
             window.renderCartPage();
 
-            // Auto-trigger checkout if parameter present and logged in
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('checkout') === 'true' && window.GVCart.isLoggedIn()) {
-                // Let a brief moment pass for DOM setup
-                setTimeout(() => {
-                    btnCheckout.click();
-                }, 400);
-            }
         });
     </script>
 }

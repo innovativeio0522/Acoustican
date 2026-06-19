@@ -96,10 +96,6 @@ public class OrderService(
         }).ToList();
 
         _context.OrderItems.AddRange(orderItems);
-
-        // Clear the cart
-        _context.CartItems.RemoveRange(cartItems);
-
         await _context.SaveChangesAsync();
 
         _logger.LogInformation(
@@ -158,28 +154,35 @@ public class OrderService(
 
     public async Task<OrderDto?> GetOrderByIdAsync(int userId, int orderId)
     {
-        return await _context.Orders
+        var order = await _context.Orders
             .Where(o => o.Id == orderId && o.UserId == userId)
             .Include(o => o.Items)
                 .ThenInclude(oi => oi.Course)
-            .Select(o => new OrderDto
-            {
-                Id = o.Id,
-                TotalAmount = o.TotalAmount,
-                Status = o.Status,
-                PaymentId = o.PaymentId,
-                RazorpayOrderId = o.RazorpayOrderId,
-                CreatedAt = o.CreatedAt,
-                Items = o.Items.Select(oi => new OrderItemDto
-                {
-                    Id = oi.Id,
-                    CourseId = oi.CourseId,
-                    CourseTitle = oi.CourseTitle,
-                    Price = oi.Price,
-                    CourseThumbnailUrl = oi.Course.ThumbnailUrl
-                }).ToList()
-            })
             .FirstOrDefaultAsync();
+
+        if (order == null)
+            return null;
+
+        var keyId = _configuration["Razorpay:KeyId"];
+
+        return new OrderDto
+        {
+            Id = order.Id,
+            TotalAmount = order.TotalAmount,
+            Status = order.Status,
+            PaymentId = order.PaymentId,
+            RazorpayOrderId = order.RazorpayOrderId,
+            RazorpayKey = keyId,
+            CreatedAt = order.CreatedAt,
+            Items = order.Items.Select(oi => new OrderItemDto
+            {
+                Id = oi.Id,
+                CourseId = oi.CourseId,
+                CourseTitle = oi.CourseTitle,
+                Price = oi.Price,
+                CourseThumbnailUrl = oi.Course.ThumbnailUrl
+            }).ToList()
+        };
     }
 
     public async Task<(bool Success, string Message)> CancelOrderAsync(int userId, int orderId)
@@ -245,6 +248,18 @@ public class OrderService(
         order.UpdatedAt = DateTime.UtcNow;
 
         _context.Orders.Update(order);
+
+        // Clear only the purchased items from the cart
+        var purchasedCourseIds = await _context.OrderItems
+            .Where(oi => oi.OrderId == order.Id)
+            .Select(oi => oi.CourseId)
+            .ToListAsync();
+
+        var cartItemsToRemove = await _context.CartItems
+            .Where(ci => ci.UserId == userId && purchasedCourseIds.Contains(ci.CourseId))
+            .ToListAsync();
+
+        _context.CartItems.RemoveRange(cartItemsToRemove);
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Order {OrderId} successfully paid and verified with PaymentId {PaymentId}", order.Id, dto.RazorpayPaymentId);
