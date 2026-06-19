@@ -817,7 +817,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const toast = document.getElementById('toast');
 
     const actionButtons = document.querySelectorAll(
-        '.course-btn, .nav-cta, .btn-primary:not([type="submit"]):not(.nav-cta)'
+        '.nav-cta, .btn-primary:not([type="submit"]):not(.nav-cta)'
     );
 
     actionButtons.forEach(btn => {

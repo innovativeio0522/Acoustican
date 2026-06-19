@@ -223,7 +223,8 @@
             // ===== PREMIUM DYNAMIC COURSE ENROLLMENT & LESSON TRACKING =====
             function checkEnrollment() {
                 const enrolledCourses = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
-                if (enrolledCourses.includes(courseTitle)) {
+                const hasSub = localStorage.getItem('hasActiveSubscription') === 'true';
+                if (hasSub || enrolledCourses.includes(courseTitle)) {
                     ctaButtons.forEach(btn => {
                         btn.textContent = "Resume Learning";
                         btn.style.background = "#4ade80"; // Green accent for enrolled state

@@ -267,62 +267,6 @@
         <button>→</button>
 </section>
 
-<!-- PRICING SECTION -->
-<section class="pricing-section" id="pricing">
-    <div class="pricing-header reveal">
-        <h2>Choose Your Plan</h2>
-        <p>Unlock ultimate access with our simple, transparent pricing options.</p>
-    </div>
-    <div class="pricing-grid reveal-stagger">
-        @foreach (var tier in Model.PricingTiers)
-        {
-            <div class="pricing-card @(tier.IsPopular ? "popular" : "")">
-                @if (tier.IsPopular)
-                {
-                    <span class="popular-badge">Most Popular</span>
-                }
-                <div class="pricing-card-header">
-                    <div class="pricing-icon">@(string.IsNullOrEmpty(tier.Icon) ? "🎸" : tier.Icon)</div>
-                    <h3 class="pricing-plan-name">@tier.Name</h3>
-                    <p class="pricing-plan-desc">@tier.Description</p>
-                </div>
-                <div class="pricing-card-price">
-                    <span class="currency">₹</span>
-                    <span class="price-value">@tier.Price.ToString("N0")</span>
-                    <span class="period">/ @tier.BillingPeriod</span>
-                </div>
-                <button class="pricing-btn" 
-                        data-pricing-action="subscribe"
-                        data-tier-id="@tier.Id"
-                        data-tier-name="@tier.Name">
-                    Get Started
-                </button>
-                <div class="pricing-features-list">
-                    <h4>Included Features:</h4>
-                    <ul>
-                        @foreach (var feature in tier.Features)
-                        {
-                            @if (feature.IsIncluded)
-                            {
-                                <li>
-                                    <span class="feature-icon check">✓</span>
-                                    <span class="feature-text">@feature.Feature</span>
-                                </li>
-                            }
-                            else
-                            {
-                                <li class="not-included">
-                                    <span class="feature-icon cross">✗</span>
-                                    <span class="feature-text">@feature.Feature</span>
-                                </li>
-                            }
-                        }
-                    </ul>
-                </div>
-            </div>
-        }
-    </div>
-</section>
 
 <!-- ABOUT SECTION -->
 <section class="about-section" id="about">

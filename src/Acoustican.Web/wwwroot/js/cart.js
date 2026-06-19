@@ -276,6 +276,12 @@
         document.addEventListener('click', function (e) {
             const btn = e.target.closest('[data-cart-action="add"]');
             if (!btn) return;
+
+            // If the course is already purchased or user is subscribed, do not add to cart
+            if (btn.getAttribute('data-enrolled') === 'true') {
+                return; // Let the event bubble naturally to the parent <a> tag for navigation
+            }
+
             e.preventDefault();
             e.stopPropagation();
 

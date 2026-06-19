@@ -518,6 +518,49 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.reload();
     };
 
+    function updateCourseButtonsUI(isSubscribed) {
+        const enrolledCourses = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
+        const courseButtons = document.querySelectorAll('.course-btn');
+        
+        courseButtons.forEach(btn => {
+            const title = btn.getAttribute('data-course-title') || '';
+            const trimmedTitle = title.trim();
+            
+            const isEnrolled = isSubscribed || (trimmedTitle && enrolledCourses.includes(trimmedTitle));
+            
+            if (isEnrolled) {
+                btn.textContent = "Resume Learning";
+                btn.setAttribute('data-enrolled', 'true');
+                btn.style.background = "#4ade80"; // Green accent for enrolled state
+                btn.style.color = "#0a0a0b";
+                btn.style.boxShadow = "0 8px 30px rgba(74, 222, 128, 0.25)";
+                btn.style.border = "none";
+                
+                // If on details page, register click to scroll
+                if (window.location.pathname.includes('/courses/')) {
+                    if (!btn.dataset.scrollListenerAdded) {
+                        const newBtn = btn.cloneNode(true);
+                        newBtn.dataset.scrollListenerAdded = 'true';
+                        btn.parentNode.replaceChild(newBtn, btn);
+                        newBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            document.querySelector('.course-modules')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        });
+                    }
+                }
+            } else {
+                btn.textContent = "Add to cart";
+                btn.removeAttribute('data-enrolled');
+                btn.style.background = "";
+                btn.style.color = "";
+                btn.style.boxShadow = "";
+                btn.style.border = "";
+                delete btn.dataset.scrollListenerAdded;
+            }
+        });
+    }
+
     window.updateAuthUI = async function updateAuthUI() {
         const token = localStorage.getItem('userToken');
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
@@ -525,6 +568,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const authActions = document.getElementById('authActions');
         const userFullName = document.getElementById('userFullName');
         const userDropdownName = document.getElementById('userDropdownName');
+
+        let isSubscribed = false;
 
         if (token) {
             if (userProfile) userProfile.classList.remove('d-none');
@@ -546,6 +591,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (sub && sub.planName) {
                         if (planBadgeRow) planBadgeRow.style.display = 'flex';
                         if (planLabel) planLabel.textContent = sub.planName;
+                        if (sub.status === 'active') {
+                            isSubscribed = true;
+                        }
                     } else {
                         if (planBadgeRow) planBadgeRow.style.display = 'none';
                     }
@@ -557,6 +605,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (userProfile) userProfile.classList.add('d-none');
             if (authActions) authActions.classList.remove('d-none');
         }
+
+        if (isSubscribed) {
+            localStorage.setItem('hasActiveSubscription', 'true');
+        } else {
+            localStorage.removeItem('hasActiveSubscription');
+        }
+
+        updateCourseButtonsUI(isSubscribed);
     }
 
     // ===== DROPDOWN TOGGLE =====
