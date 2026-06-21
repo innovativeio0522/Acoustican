@@ -48,6 +48,16 @@ public class CartService(ApplicationDbContext context, ILogger<CartService> logg
         if (course == null)
             return (false, "Course not found or not available");
 
+        // Check if user already has an active subscription
+        var hasActiveSub = await _context.UserSubscriptions.AnyAsync(s => s.UserId == userId && s.Status == "active");
+        if (hasActiveSub)
+            return (false, "You already have access to all courses via your active subscription.");
+
+        // Check if user already purchased the course
+        var isPurchased = await _context.Orders.AnyAsync(o => o.UserId == userId && o.Status == "Confirmed" && o.Items.Any(oi => oi.CourseId == courseId));
+        if (isPurchased)
+            return (false, "You have already purchased this course.");
+
         // Check for duplicate
         var exists = await _context.CartItems
             .AnyAsync(ci => ci.UserId == userId && ci.CourseId == courseId);
@@ -108,9 +118,21 @@ public class CartService(ApplicationDbContext context, ILogger<CartService> logg
         if (courseIds.Count == 0)
             return (0, 0);
 
-        // Get published course IDs that actually exist
+        // If they have an active subscription, don't sync any items
+        var hasActiveSub = await _context.UserSubscriptions.AnyAsync(s => s.UserId == userId && s.Status == "active");
+        if (hasActiveSub)
+            return (0, courseIds.Count);
+
+        // Get already purchased course IDs
+        var purchasedCourseIds = await _context.Orders
+            .Where(o => o.UserId == userId && o.Status == "Confirmed")
+            .SelectMany(o => o.Items)
+            .Select(oi => oi.CourseId)
+            .ToListAsync();
+
+        // Get published course IDs that actually exist and are not already purchased
         var validCourseIds = await _context.Courses
-            .Where(c => courseIds.Contains(c.Id) && c.IsPublished)
+            .Where(c => courseIds.Contains(c.Id) && c.IsPublished && !purchasedCourseIds.Contains(c.Id))
             .Select(c => c.Id)
             .ToListAsync();
 

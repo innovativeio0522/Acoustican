@@ -59,6 +59,15 @@ public class AuthService(ApplicationDbContext context, IConfiguration configurat
         _context.AdminUsers.Add(user);
         await _context.SaveChangesAsync();
 
+        try
+        {
+            await _emailService.SendWelcomeEmailAsync(user.Email, user.FullName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send welcome email to {Email} during registration.", user.Email);
+        }
+
         return (true, "User registered successfully", user);
     }
 

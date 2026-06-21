@@ -94,12 +94,18 @@ public class CoursesController(ICourseService courseService, IFileUploadService 
                 Description = course.Description,
                 Level = course.Level,
                 Price = course.Price,
+                OriginalPrice = course.OriginalPrice,
                 DurationMinutes = course.DurationMinutes,
+                LectureCount = course.LectureCount,
+                InstructorName = course.InstructorName,
                 ThumbnailUrl = response.FilePath,
                 StudentCount = course.StudentCount,
                 Rating = course.Rating,
                 ReviewCount = course.ReviewCount,
-                IsPublished = course.IsPublished
+                IsBestseller = course.IsBestseller,
+                IsPublished = course.IsPublished,
+                WhatYoullLearn = course.WhatYoullLearn,
+                Requirements = course.Requirements
             };
             await courseService.UpdateCourseAsync(id, updateDto);
         }

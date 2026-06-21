@@ -18,22 +18,16 @@ public interface ITestimonialService
     Task<bool> UnpublishTestimonialAsync(int id);
 }
 
-public class TestimonialService : ITestimonialService
+public class TestimonialService(ApplicationDbContext context, IMapper mapper, ILogger<TestimonialService> logger) : ITestimonialService
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IMapper _mapper;
-    private readonly ILogger<TestimonialService> _logger;
-
-    public TestimonialService(ApplicationDbContext context, IMapper mapper, ILogger<TestimonialService> logger)
-    {
-        _context = context;
-        _mapper = mapper;
-        _logger = logger;
-    }
+    private readonly ApplicationDbContext _context = context;
+    private readonly IMapper _mapper = mapper;
+    private readonly ILogger<TestimonialService> _logger = logger;
 
     public async Task<List<TestimonialDto>> GetAllTestimonialsAsync()
     {
         var testimonials = await _context.Testimonials
+            .AsNoTracking()
             .OrderBy(t => t.DisplayOrder)
             .ToListAsync();
         return _mapper.Map<List<TestimonialDto>>(testimonials);
@@ -42,6 +36,7 @@ public class TestimonialService : ITestimonialService
     public async Task<List<TestimonialDto>> GetPublishedTestimonialsAsync()
     {
         var testimonials = await _context.Testimonials
+            .AsNoTracking()
             .Where(t => t.IsPublished)
             .OrderBy(t => t.DisplayOrder)
             .ToListAsync();
@@ -50,7 +45,9 @@ public class TestimonialService : ITestimonialService
 
     public async Task<TestimonialDto?> GetTestimonialByIdAsync(int id)
     {
-        var testimonial = await _context.Testimonials.FindAsync(id);
+        var testimonial = await _context.Testimonials
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == id);
         return _mapper.Map<TestimonialDto>(testimonial);
     }
 

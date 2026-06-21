@@ -18,22 +18,16 @@ public interface IPricingService
     Task<bool> UnpublishTierAsync(int id);
 }
 
-public class PricingService : IPricingService
+public class PricingService(ApplicationDbContext context, IMapper mapper, ILogger<PricingService> logger) : IPricingService
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IMapper _mapper;
-    private readonly ILogger<PricingService> _logger;
-
-    public PricingService(ApplicationDbContext context, IMapper mapper, ILogger<PricingService> logger)
-    {
-        _context = context;
-        _mapper = mapper;
-        _logger = logger;
-    }
+    private readonly ApplicationDbContext _context = context;
+    private readonly IMapper _mapper = mapper;
+    private readonly ILogger<PricingService> _logger = logger;
 
     public async Task<List<PricingTierDto>> GetAllTiersAsync()
     {
         var tiers = await _context.PricingTiers
+            .AsNoTracking()
             .Include(p => p.Features)
             .OrderBy(p => p.DisplayOrder)
             .ToListAsync();
@@ -43,6 +37,7 @@ public class PricingService : IPricingService
     public async Task<List<PricingTierDto>> GetPublishedTiersAsync()
     {
         var tiers = await _context.PricingTiers
+            .AsNoTracking()
             .Include(p => p.Features)
             .Where(p => p.IsPublished)
             .OrderBy(p => p.DisplayOrder)
@@ -53,6 +48,7 @@ public class PricingService : IPricingService
     public async Task<PricingTierDto?> GetTierByIdAsync(int id)
     {
         var tier = await _context.PricingTiers
+            .AsNoTracking()
             .Include(p => p.Features)
             .FirstOrDefaultAsync(p => p.Id == id);
         return _mapper.Map<PricingTierDto>(tier);
@@ -72,14 +68,15 @@ public class PricingService : IPricingService
             _context.PricingTiers.Add(tier);
             await _context.SaveChangesAsync();
 
-            foreach (var feature in dto.Features)
+            for (int i = 0; i < dto.Features.Count; i++)
             {
+                var feature = dto.Features[i];
                 _context.PricingFeatures.Add(new PricingFeature
                 {
                     PricingTierId = tier.Id,
                     Feature = feature,
                     IsIncluded = true,
-                    DisplayOrder = dto.Features.IndexOf(feature)
+                    DisplayOrder = i
                 });
             }
 
@@ -121,14 +118,15 @@ public class PricingService : IPricingService
             _context.PricingFeatures.RemoveRange(tier.Features);
             await _context.SaveChangesAsync();
 
-            foreach (var feature in dto.Features)
+            for (int i = 0; i < dto.Features.Count; i++)
             {
+                var feature = dto.Features[i];
                 _context.PricingFeatures.Add(new PricingFeature
                 {
                     PricingTierId = tier.Id,
                     Feature = feature,
                     IsIncluded = true,
-                    DisplayOrder = dto.Features.IndexOf(feature)
+                    DisplayOrder = i
                 });
             }
 

@@ -2,32 +2,24 @@ using Acoustican.Data;
 using Acoustican.Models;
 using Acoustican.Services;
 using Acoustican.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Acoustican.Controllers.Mvc;
 
-public class HomeController : Controller
+public class HomeController(
+    ICourseService courseService,
+    IPricingService pricingService,
+    ITestimonialService testimonialService,
+    ApplicationDbContext context,
+    ILogger<HomeController> logger) : Controller
 {
-    private readonly ICourseService _courseService;
-    private readonly IPricingService _pricingService;
-    private readonly ITestimonialService _testimonialService;
-    private readonly ApplicationDbContext _context;
-    private readonly ILogger<HomeController> _logger;
-
-    public HomeController(
-        ICourseService courseService,
-        IPricingService pricingService,
-        ITestimonialService testimonialService,
-        ApplicationDbContext context,
-        ILogger<HomeController> logger)
-    {
-        _courseService = courseService;
-        _pricingService = pricingService;
-        _testimonialService = testimonialService;
-        _context = context;
-        _logger = logger;
-    }
+    private readonly ICourseService _courseService = courseService;
+    private readonly IPricingService _pricingService = pricingService;
+    private readonly ITestimonialService _testimonialService = testimonialService;
+    private readonly ApplicationDbContext _context = context;
+    private readonly ILogger<HomeController> _logger = logger;
 
 
 
@@ -134,6 +126,7 @@ public class HomeController : Controller
     }
 
     [HttpGet("debug-refresh-modules")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DebugRefreshModules()
     {
         try

@@ -79,7 +79,18 @@ public class FileUploadService(IConfiguration configuration, IWebHostEnvironment
     {
         try
         {
-            var fullPath = Path.Combine(environment.ContentRootPath, filePath.TrimStart('/'));
+            var uploadPathSetting = configuration["FileUpload:UploadPath"] ?? "uploads";
+            var uploadsRoot = Path.GetFullPath(Path.Combine(environment.ContentRootPath, uploadPathSetting));
+            
+            var normalizedInput = filePath.Replace('\\', '/').TrimStart('/');
+            var fullPath = Path.GetFullPath(Path.Combine(environment.ContentRootPath, normalizedInput));
+
+            if (!fullPath.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                logger.LogWarning("Access denied/path traversal attempt detected for file deletion: {FilePath}", filePath);
+                return false;
+            }
+
             if (File.Exists(fullPath))
             {
                 await Task.Run(() => File.Delete(fullPath));

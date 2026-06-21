@@ -20,6 +20,7 @@ public class LessonService(ApplicationDbContext context, IMapper mapper) : ILess
     public async Task<List<LessonDto>> GetLessonsByModuleIdAsync(int moduleId)
     {
         var lessons = await context.Lessons
+            .AsNoTracking()
             .Where(l => l.ModuleId == moduleId)
             .OrderBy(l => l.DisplayOrder)
             .ToListAsync();

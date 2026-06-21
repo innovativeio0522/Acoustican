@@ -4,16 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Acoustican.Services
 {
-    public class ContactService : IContactService
+    public class ContactService(ApplicationDbContext context, ILogger<ContactService> logger) : IContactService
     {
-        private readonly ApplicationDbContext _context;
-        private readonly ILogger<ContactService> _logger;
-
-        public ContactService(ApplicationDbContext context, ILogger<ContactService> logger)
-        {
-            _context = context;
-            _logger = logger;
-        }
+        private readonly ApplicationDbContext _context = context;
+        private readonly ILogger<ContactService> _logger = logger;
 
         public async Task<ContactMessage> CreateContactMessageAsync(ContactMessage message)
         {
@@ -26,13 +20,16 @@ namespace Acoustican.Services
         public async Task<List<ContactMessage>> GetAllContactMessagesAsync()
         {
             return await _context.ContactMessages
+                .AsNoTracking()
                 .OrderByDescending(m => m.CreatedAt)
                 .ToListAsync();
         }
 
         public async Task<ContactMessage?> GetContactMessageByIdAsync(int id)
         {
-            return await _context.ContactMessages.FindAsync(id);
+            return await _context.ContactMessages
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Id == id);
         }
 
         public async Task<ContactMessage?> MarkAsReadAsync(int id)

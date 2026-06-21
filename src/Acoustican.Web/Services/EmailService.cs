@@ -9,16 +9,10 @@ public interface IEmailService
     Task<(bool Success, string Message)> SendWelcomeEmailAsync(string email, string userName);
 }
 
-public class EmailService : IEmailService
+public class EmailService(IConfiguration configuration, ILogger<EmailService> logger) : IEmailService
 {
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<EmailService> _logger;
-
-    public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
-    {
-        _configuration = configuration;
-        _logger = logger;
-    }
+    private readonly IConfiguration _configuration = configuration;
+    private readonly ILogger<EmailService> _logger = logger;
 
     public async Task<(bool Success, string Message)> SendPasswordResetEmailAsync(string email, string resetToken, string userName)
     {
@@ -93,6 +87,9 @@ public class EmailService : IEmailService
                 return (true, "Welcome notification (email not configured)");
             }
 
+            var baseUrl = _configuration["App:BaseUrl"] ?? "http://localhost:5000";
+            var coursesLink = $"{baseUrl.TrimEnd('/')}/courses";
+
             using (var smtpClient = new SmtpClient(host, port))
             {
                 smtpClient.Credentials = new NetworkCredential(sender, password);
@@ -102,7 +99,7 @@ public class EmailService : IEmailService
                 {
                     From = new MailAddress(sender, "Acoustican"),
                     Subject = "Welcome to Acoustican!",
-                    Body = GenerateWelcomeEmailBody(userName),
+                    Body = GenerateWelcomeEmailBody(userName, coursesLink),
                     IsBodyHtml = true
                 };
 
@@ -155,7 +152,7 @@ public class EmailService : IEmailService
 ";
     }
 
-    private string GenerateWelcomeEmailBody(string userName)
+    private string GenerateWelcomeEmailBody(string userName, string coursesLink)
     {
         return $@"
 <!DOCTYPE html>
@@ -177,7 +174,7 @@ public class EmailService : IEmailService
             <p>Hi {userName},</p>
             <p>Welcome to Acoustican! We're excited to have you join our community of guitarists.</p>
             <p>Get started learning with our comprehensive courses designed for beginners to advanced players.</p>
-            <a href='http://localhost:5000/courses' class='button'>Explore Courses</a>
+            <a href='{coursesLink}' class='button'>Explore Courses</a>
         </div>
         <div class='footer'>
             <p>© 2026 Acoustican Academy. All rights reserved.</p>
