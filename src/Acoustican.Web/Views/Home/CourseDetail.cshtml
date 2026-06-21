@@ -6,6 +6,14 @@
     var mins = Model.DurationMinutes % 60;
 }
 
+@section Styles {
+    <style>
+        body.logged-in .lesson-free-preview {
+            display: none !important;
+        }
+    </style>
+}
+
 <!-- Ambient Glows -->
 <div class="ambient-glow glow-top-left"></div>
 <div class="ambient-glow glow-mid-right"></div>
@@ -244,6 +252,7 @@
                 const userData = JSON.parse(localStorage.getItem('userData') || '{}');
                 const isAdmin = userData && userData.role === 'Admin';
                 const isEnrolled = hasSub || enrolledCourses.includes(courseTitle) || isAdmin;
+                const isLoggedIn = !!localStorage.getItem('userToken');
 
                 lessons.forEach((lesson) => {
                     const titleEl = lesson.querySelector('.lesson-title');
@@ -252,6 +261,16 @@
                     const lessonKey = `${courseTitle} - ${lessonTitle}`;
                     const videoUrl = lesson.dataset.videoUrl;
                     const isPreview = lesson.dataset.isPreview === 'true';
+
+                    // If user is logged in, hide the free preview badge
+                    const freePreviewBadge = lesson.querySelector('.lesson-free-preview');
+                    if (freePreviewBadge) {
+                        if (isLoggedIn) {
+                            freePreviewBadge.style.display = 'none';
+                        } else {
+                            freePreviewBadge.style.display = '';
+                        }
+                    }
 
                     // ── Apply visual state based on enrollment ──────────────
                     if (isEnrolled) {
@@ -372,6 +391,12 @@
                     checkEnrollment();
                     setupLessons();
                 }
+            });
+
+            // Listen to authentication state changes
+            window.addEventListener('auth-state-changed', function(e) {
+                checkEnrollment();
+                setupLessons();
             });
         });
     </script>

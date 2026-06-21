@@ -577,6 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let isSubscribed = false;
 
         if (token) {
+            document.body.classList.add('logged-in');
             if (userProfile) userProfile.classList.remove('d-none');
             if (authActions) authActions.classList.add('d-none');
             const name = userData.fullName || userData.FullName || 'User';
@@ -631,6 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Failed to sync enrolled courses from orders', err);
             }
         } else {
+            document.body.classList.remove('logged-in');
             if (userProfile) userProfile.classList.add('d-none');
             if (authActions) authActions.classList.remove('d-none');
             localStorage.removeItem('enrolledCourses');
@@ -643,6 +645,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         updateCourseButtonsUI(isSubscribed);
+        window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { isLoggedIn: !!token } }));
     }
 
     // ===== DROPDOWN TOGGLE =====
