@@ -2,6 +2,7 @@ using Acoustican.Data;
 using Acoustican.DTOs;
 using Acoustican.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace Acoustican.Services;
 
@@ -18,12 +19,14 @@ public class OrderService(
     ApplicationDbContext context,
     ICartService cartService,
     ILogger<OrderService> logger,
-    Microsoft.Extensions.Configuration.IConfiguration configuration) : IOrderService
+    Microsoft.Extensions.Configuration.IConfiguration configuration,
+    Microsoft.AspNetCore.Hosting.IWebHostEnvironment environment) : IOrderService
 {
     private readonly ApplicationDbContext _context = context;
     private readonly ICartService _cartService = cartService;
     private readonly ILogger<OrderService> _logger = logger;
     private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration = configuration;
+    private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _environment = environment;
 
     public async Task<(bool Success, string Message, OrderDto? Order)> CreateOrderFromCartAsync(int userId)
     {
@@ -35,6 +38,11 @@ public class OrderService(
 
         if (cartItems.Count == 0)
             return (false, "Your cart is empty", null);
+
+        // Check if user has an active subscription
+        var hasActiveSub = await _context.UserSubscriptions.AnyAsync(s => s.UserId == userId && s.Status == "active");
+        if (hasActiveSub)
+            return (false, "You already have access to all courses via your active subscription.", null);
 
         // Create order with snapshot of current prices
         var now = DateTime.UtcNow;
@@ -155,6 +163,7 @@ public class OrderService(
     public async Task<OrderDto?> GetOrderByIdAsync(int userId, int orderId)
     {
         var order = await _context.Orders
+            .AsNoTracking()
             .Where(o => o.Id == orderId && o.UserId == userId)
             .Include(o => o.Items)
                 .ThenInclude(oi => oi.Course)
@@ -221,8 +230,15 @@ public class OrderService(
 
         if (dto.RazorpayOrderId.StartsWith("order_mock_"))
         {
-            isValid = true;
-            _logger.LogInformation("Verifying mock order {OrderId} as successful.", dto.RazorpayOrderId);
+            if (_environment.IsDevelopment())
+            {
+                isValid = true;
+                _logger.LogInformation("Verifying mock order {OrderId} as successful in Development environment.", dto.RazorpayOrderId);
+            }
+            else
+            {
+                _logger.LogWarning("Attempted to bypass payment verification using mock order {OrderId} in production!", dto.RazorpayOrderId);
+            }
         }
         else if (!string.IsNullOrWhiteSpace(keySecret))
         {

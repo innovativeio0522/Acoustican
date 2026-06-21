@@ -1,14 +1,17 @@
 using Acoustican.Models;
 using Acoustican.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Acoustican.Controllers;
 
 [ApiController]
 [Route("api/contact")]
+[Authorize(Roles = "Admin,ContentManager,Viewer")]
 public class ContactController(IContactService contactService) : ControllerBase
 {
     [HttpPost]
+    [AllowAnonymous]
     public async Task<IActionResult> CreateContactMessage([FromBody] ContactMessage message)
     {
         if (!ModelState.IsValid)
@@ -36,6 +39,7 @@ public class ContactController(IContactService contactService) : ControllerBase
     }
 
     [HttpPut("{id}/mark-read")]
+    [Authorize(Roles = "Admin,ContentManager")]
     public async Task<IActionResult> MarkAsRead(int id)
     {
         var message = await contactService.MarkAsReadAsync(id);
@@ -45,6 +49,7 @@ public class ContactController(IContactService contactService) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin,ContentManager")]
     public async Task<IActionResult> DeleteContactMessage(int id)
     {
         var success = await contactService.DeleteContactMessageAsync(id);

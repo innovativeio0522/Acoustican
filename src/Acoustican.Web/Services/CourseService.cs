@@ -22,6 +22,7 @@ public class CourseService(ApplicationDbContext context, IMapper mapper) : ICour
     public async Task<List<CourseDto>> GetAllCoursesAsync()
     {
         var courses = await context.Courses
+            .AsNoTracking()
             .Include(c => c.Modules.OrderBy(m => m.DisplayOrder).ThenBy(m => m.ModuleNumber))
                 .ThenInclude(m => m.Lessons)
             .OrderByDescending(c => c.CreatedAt)
@@ -32,6 +33,7 @@ public class CourseService(ApplicationDbContext context, IMapper mapper) : ICour
     public async Task<CourseDto?> GetCourseByIdAsync(int id)
     {
         var course = await context.Courses
+            .AsNoTracking()
             .Include(c => c.Modules.OrderBy(m => m.DisplayOrder).ThenBy(m => m.ModuleNumber))
                 .ThenInclude(m => m.Lessons)
             .FirstOrDefaultAsync(c => c.Id == id);

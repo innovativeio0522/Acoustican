@@ -21,6 +21,7 @@ public class ModuleService(ApplicationDbContext context, IMapper mapper) : IModu
     public async Task<List<CourseModuleDto>> GetModulesByCourseIdAsync(int courseId)
     {
         var modules = await context.CourseModules
+            .AsNoTracking()
             .Include(m => m.Lessons.OrderBy(l => l.DisplayOrder))
             .Where(m => m.CourseId == courseId)
             .OrderBy(m => m.DisplayOrder)
@@ -32,6 +33,7 @@ public class ModuleService(ApplicationDbContext context, IMapper mapper) : IModu
     public async Task<List<CourseModuleDto>> GetAllPublishedModulesAsync()
     {
         var modules = await context.CourseModules
+            .AsNoTracking()
             .Include(m => m.Lessons.OrderBy(l => l.DisplayOrder))
             .Where(m => m.IsPublished)
             .OrderBy(m => m.DisplayOrder)
@@ -43,6 +45,7 @@ public class ModuleService(ApplicationDbContext context, IMapper mapper) : IModu
     public async Task<CourseModuleDto?> GetModuleByIdAsync(int id)
     {
         var module = await context.CourseModules
+            .AsNoTracking()
             .Include(m => m.Lessons.OrderBy(l => l.DisplayOrder))
             .FirstOrDefaultAsync(m => m.Id == id);
         return mapper.Map<CourseModuleDto>(module);

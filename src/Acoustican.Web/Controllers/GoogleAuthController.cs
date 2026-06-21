@@ -13,18 +13,12 @@ namespace Acoustican.Controllers;
 
 [ApiController]
 [Route("api/auth/google")]
-public class GoogleAuthController : ControllerBase
+public class GoogleAuthController(ApplicationDbContext db, IAuthService authService, IConfiguration configuration, IEmailService emailService) : ControllerBase
 {
-    private readonly ApplicationDbContext _db;
-    private readonly IAuthService _authService;
-    private readonly IConfiguration _configuration;
-
-    public GoogleAuthController(ApplicationDbContext db, IAuthService authService, IConfiguration configuration)
-    {
-        _db = db;
-        _authService = authService;
-        _configuration = configuration;
-    }
+    private readonly ApplicationDbContext _db = db;
+    private readonly IAuthService _authService = authService;
+    private readonly IConfiguration _configuration = configuration;
+    private readonly IEmailService _emailService = emailService;
 
     [HttpGet("login")]
     [AllowAnonymous]
@@ -77,18 +71,28 @@ public class GoogleAuthController : ControllerBase
             };
 
             _db.AdminUsers.Add(user);
+            await _db.SaveChangesAsync();
+
+            // Send welcome email for new Google registrations
+            try
+            {
+                await _emailService.SendWelcomeEmailAsync(user.Email, user.FullName);
+            }
+            catch
+            {
+                // Ignore email failure, proceed to login
+            }
         }
         else
         {
             user.FullName = string.IsNullOrWhiteSpace(fullName) ? user.FullName : fullName;
             user.IsActive = true;
-            user.Role = "User"; // normal users only
+            // Preserving existing user role (do not overwrite with "User")
             user.LastLoginAt = DateTime.UtcNow;
 
             _db.AdminUsers.Update(user);
+            await _db.SaveChangesAsync();
         }
-
-        await _db.SaveChangesAsync();
 
         var token = _authService.GenerateJwtToken(user);
 

@@ -208,7 +208,7 @@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const courseTitle = "@Html.Raw(Model.Title)";
+            const courseTitle = "@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.Title))";
             const ctaButtons = document.querySelectorAll('.course-btn');
 
             // ===== PREMIUM DYNAMIC COURSE ENROLLMENT & LESSON PLAYBACK =====

@@ -10,7 +10,7 @@ namespace Acoustican.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class VideosController(ApplicationDbContext context, IConfiguration configuration, ILogger<VideosController> logger) : ControllerBase
+public class VideosController(ApplicationDbContext context, IConfiguration configuration, ILogger<VideosController> logger, IHttpClientFactory httpClientFactory) : ControllerBase
 {
 
     [HttpPost("otp/{videoId}")]
@@ -93,7 +93,7 @@ public class VideosController(ApplicationDbContext context, IConfiguration confi
             }
 
 
-            using var httpClient = new HttpClient();
+            using var httpClient = httpClientFactory.CreateClient();
             using var request = new HttpRequestMessage(HttpMethod.Post, $"https://dev.vdocipher.com/api/videos/{videoId}/otp");
             request.Headers.Add("Authorization", $"Apisecret {apiKey}");
 

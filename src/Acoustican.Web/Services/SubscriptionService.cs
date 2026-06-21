@@ -2,14 +2,19 @@ using Acoustican.Data;
 using Acoustican.DTOs;
 using Acoustican.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace Acoustican.Services;
 
 public class SubscriptionService(
     ApplicationDbContext context,
-    Microsoft.Extensions.Configuration.IConfiguration configuration) : ISubscriptionService
+    Microsoft.Extensions.Configuration.IConfiguration configuration,
+    Microsoft.AspNetCore.Hosting.IWebHostEnvironment environment,
+    ILogger<SubscriptionService> logger) : ISubscriptionService
 {
     private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration = configuration;
+    private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _environment = environment;
+    private readonly ILogger<SubscriptionService> _logger = logger;
 
     public async Task<SubscriptionDto?> SubscribeAsync(int userId, int pricingTierId)
     {
@@ -81,6 +86,11 @@ public class SubscriptionService(
             Status = status,
             RazorpayOrderId = razorpayOrderId,
             StartDate = DateTime.UtcNow,
+            EndDate = !requiresPayment
+                ? (tier.BillingPeriod.Equals("yearly", StringComparison.OrdinalIgnoreCase) || tier.BillingPeriod.Equals("annually", StringComparison.OrdinalIgnoreCase)
+                    ? DateTime.UtcNow.AddYears(1)
+                    : DateTime.UtcNow.AddMonths(1))
+                : null,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -97,6 +107,7 @@ public class SubscriptionService(
     public async Task<SubscriptionDto?> GetUserSubscriptionAsync(int userId)
     {
         var subscription = await context.UserSubscriptions
+            .AsNoTracking()
             .Include(s => s.PricingTier)
             .FirstOrDefaultAsync(s => s.UserId == userId && s.Status == "active");
 
@@ -149,7 +160,15 @@ public class SubscriptionService(
 
         if (dto.RazorpayOrderId.StartsWith("order_mock_"))
         {
-            isValid = true;
+            if (_environment.IsDevelopment())
+            {
+                isValid = true;
+                _logger.LogInformation("Verifying mock subscription order {OrderId} as successful in Development environment.", dto.RazorpayOrderId);
+            }
+            else
+            {
+                _logger.LogWarning("Attempted to bypass subscription payment verification using mock order {OrderId} in production!", dto.RazorpayOrderId);
+            }
         }
         else if (!string.IsNullOrWhiteSpace(keySecret))
         {
@@ -172,6 +191,10 @@ public class SubscriptionService(
 
         subscription.Status = "active";
         subscription.PaymentId = dto.RazorpayPaymentId;
+        subscription.StartDate = DateTime.UtcNow;
+        subscription.EndDate = subscription.PricingTier != null && (subscription.PricingTier.BillingPeriod.Equals("yearly", StringComparison.OrdinalIgnoreCase) || subscription.PricingTier.BillingPeriod.Equals("annually", StringComparison.OrdinalIgnoreCase))
+            ? subscription.StartDate.AddYears(1)
+            : subscription.StartDate.AddMonths(1);
         subscription.UpdatedAt = DateTime.UtcNow;
 
         context.UserSubscriptions.Update(subscription);
