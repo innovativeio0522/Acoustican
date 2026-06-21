@@ -32,7 +32,7 @@
             <div class="course-hero-meta">
                 <div class="course-rating">
                     <span class="rating-score">@Model.Rating</span>
-                    <span class="rating-stars">★★★★★</span>
+                    <span class="rating-stars">@string.Concat(System.Linq.Enumerable.Repeat("★", (int)Math.Round(Model.Rating)))@string.Concat(System.Linq.Enumerable.Repeat("☆", 5 - (int)Math.Round(Model.Rating)))</span>
                     <span class="rating-count">(@Model.ReviewCount reviews)</span>
                 </div>
                 <span class="course-meta-item">@Model.StudentCount students</span>
@@ -65,7 +65,7 @@
                     <p class="course-instructor">@Model.InstructorName</p>
                     <div class="course-rating">
                         <span class="rating-score">@Model.Rating</span>
-                        <span class="rating-stars">★★★★★</span>
+                        <span class="rating-stars">@string.Concat(System.Linq.Enumerable.Repeat("★", (int)Math.Round(Model.Rating)))@string.Concat(System.Linq.Enumerable.Repeat("☆", 5 - (int)Math.Round(Model.Rating)))</span>
                         <span class="rating-count">(@Model.ReviewCount)</span>
                     </div>
                     <div class="course-meta">

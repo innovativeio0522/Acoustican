@@ -44,7 +44,7 @@ public class FileUploadService(IConfiguration configuration, IWebHostEnvironment
             if (!allowedList.Contains(fileExtension, StringComparer.OrdinalIgnoreCase))
                 return new FileUploadResponse { Success = false, Message = $"File type not allowed. Allowed: {allowedExtensions}" };
 
-            var uploadsPath = Path.Combine(environment.ContentRootPath, configuration["FileUpload:UploadPath"]!, directory);
+            var uploadsPath = Path.Combine(environment.WebRootPath, configuration["FileUpload:UploadPath"]!, directory);
             Directory.CreateDirectory(uploadsPath);
 
             var uniqueFileName = $"{Guid.NewGuid()}_{DateTime.UtcNow:yyyyMMddHHmmss}{fileExtension}";
@@ -80,10 +80,10 @@ public class FileUploadService(IConfiguration configuration, IWebHostEnvironment
         try
         {
             var uploadPathSetting = configuration["FileUpload:UploadPath"] ?? "uploads";
-            var uploadsRoot = Path.GetFullPath(Path.Combine(environment.ContentRootPath, uploadPathSetting));
+            var uploadsRoot = Path.GetFullPath(Path.Combine(environment.WebRootPath, uploadPathSetting));
             
             var normalizedInput = filePath.Replace('\\', '/').TrimStart('/');
-            var fullPath = Path.GetFullPath(Path.Combine(environment.ContentRootPath, normalizedInput));
+            var fullPath = Path.GetFullPath(Path.Combine(environment.WebRootPath, normalizedInput));
 
             if (!fullPath.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase))
             {
