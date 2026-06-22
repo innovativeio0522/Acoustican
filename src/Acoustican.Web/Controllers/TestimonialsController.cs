@@ -7,7 +7,7 @@ namespace Acoustican.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin,ContentManager,Viewer")]
+[Authorize(Roles = "Admin,ContentManager,Viewer,User")]
 public class TestimonialsController(ITestimonialService testimonialService, IFileUploadService fileUploadService) : ControllerBase
 {
     [HttpGet]
@@ -35,9 +35,13 @@ public class TestimonialsController(ITestimonialService testimonialService, IFil
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,ContentManager")]
+    [Authorize(Roles = "Admin,ContentManager,User")]
     public async Task<IActionResult> CreateTestimonial([FromBody] CreateTestimonialDto dto)
     {
+        if (User.IsInRole("User"))
+        {
+            dto.IsPublished = false;
+        }
         var testimonial = await testimonialService.CreateTestimonialAsync(dto);
         return CreatedAtAction(nameof(GetTestimonialById), new { id = testimonial.Id }, testimonial);
     }

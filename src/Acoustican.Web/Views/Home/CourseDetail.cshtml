@@ -4,12 +4,152 @@
     ViewData["ActivePage"] = "Courses";
     var hours = Model.DurationMinutes / 60;
     var mins = Model.DurationMinutes % 60;
+
+    var reviewsCount = Model.Reviews?.Count ?? 0;
+    var avgRating = reviewsCount > 0 ? Model.Reviews.Average(r => r.Rating) : 0.0;
+    var roundedRating = (int)Math.Round(avgRating);
 }
 
 @section Styles {
     <style>
         body.logged-in .lesson-free-preview {
             display: none !important;
+        }
+        /* Review styling */
+        .star-rating-picker {
+            display: flex;
+            gap: 8px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            margin-bottom: 5px;
+        }
+        .picker-star {
+            color: #4b5563; /* Zinc-600, visible but inactive */
+            transition: color 0.15s, transform 0.1s;
+        }
+        .picker-star:hover {
+            transform: scale(1.15);
+        }
+        .picker-star.hover,
+        .picker-star.selected {
+            color: #f5a623;
+        }
+        .review-form-card {
+            background: rgba(22, 22, 26, 0.8);
+            border: 1px solid #222228;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 20px;
+        }
+        .review-form-card h4 {
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        .review-form-card .form-group {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 8px !important;
+            margin-bottom: 20px !important;
+            text-align: left !important;
+        }
+        .review-form-card .form-group label {
+            display: block !important;
+            font-size: 0.85rem !important;
+            font-weight: 600 !important;
+            color: var(--text-secondary) !important;
+            margin-bottom: 4px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+        }
+        .review-form-card textarea {
+            width: 100% !important;
+            background: rgba(10, 10, 11, 0.8) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 10px !important;
+            padding: 12px 16px !important;
+            color: var(--text-primary) !important;
+            font-family: inherit !important;
+            font-size: 0.95rem !important;
+            transition: all 0.25s ease !important;
+            resize: vertical !important;
+            min-height: 120px !important;
+            outline: none !important;
+        }
+        .review-form-card textarea:focus {
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 15px rgba(245, 166, 35, 0.15) !important;
+            background: rgba(10, 10, 11, 0.95) !important;
+        }
+        .review-form-card button.btn-primary {
+            align-self: flex-start !important;
+            margin-top: 10px !important;
+        }
+        .text-muted {
+            color: var(--text-muted);
+        }
+        .course-reviews-summary {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(22, 22, 26, 0.4);
+            border: 1px solid #1c1c22;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .average-rating-large {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #f5a623;
+            line-height: 1;
+        }
+        .rating-stars-large {
+            color: #f5a623;
+            font-size: 1.2rem;
+            margin: 5px 0;
+        }
+        .total-reviews-label {
+            font-size: 0.85rem;
+            color: #a0a0a8;
+        }
+        .review-item {
+            padding: 16px 0;
+            border-bottom: 1px solid #1c1c22;
+        }
+        .review-item:last-child {
+            border-bottom: none;
+        }
+        .review-item-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .reviewer-avatar img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .reviewer-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        .review-rating-stars {
+            color: #f5a623;
+            font-size: 0.8rem;
+        }
+        .review-date {
+            color: #71717a;
+            margin-left: 8px;
+            font-size: 0.8rem;
+        }
+        .review-comment {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #d4d4d8;
+            margin: 0;
         }
     </style>
 }
@@ -31,9 +171,9 @@
             <p class="course-hero-subtitle">@Model.Description</p>
             <div class="course-hero-meta">
                 <div class="course-rating">
-                    <span class="rating-score">@Model.Rating</span>
-                    <span class="rating-stars">@string.Concat(System.Linq.Enumerable.Repeat("★", (int)Math.Round(Model.Rating)))@string.Concat(System.Linq.Enumerable.Repeat("☆", 5 - (int)Math.Round(Model.Rating)))</span>
-                    <span class="rating-count">(@Model.ReviewCount reviews)</span>
+                    <span class="rating-score">@avgRating.ToString("0.0")</span>
+                    <span class="rating-stars">@string.Concat(System.Linq.Enumerable.Repeat("★", roundedRating))@string.Concat(System.Linq.Enumerable.Repeat("☆", 5 - roundedRating))</span>
+                    <span class="rating-count">(@reviewsCount reviews)</span>
                 </div>
                 <span class="course-meta-item">@Model.StudentCount students</span>
                 <span class="course-meta-item">@Model.Level</span>
@@ -64,9 +204,9 @@
                     <p class="course-description">@Model.Description</p>
                     <p class="course-instructor">@Model.InstructorName</p>
                     <div class="course-rating">
-                        <span class="rating-score">@Model.Rating</span>
-                        <span class="rating-stars">@string.Concat(System.Linq.Enumerable.Repeat("★", (int)Math.Round(Model.Rating)))@string.Concat(System.Linq.Enumerable.Repeat("☆", 5 - (int)Math.Round(Model.Rating)))</span>
-                        <span class="rating-count">(@Model.ReviewCount)</span>
+                        <span class="rating-score">@avgRating.ToString("0.0")</span>
+                        <span class="rating-stars">@string.Concat(System.Linq.Enumerable.Repeat("★", roundedRating))@string.Concat(System.Linq.Enumerable.Repeat("☆", 5 - roundedRating))</span>
+                        <span class="rating-count">(@reviewsCount)</span>
                     </div>
                     <div class="course-meta">
                         <span class="course-meta-item">@Model.LectureCount lectures</span>
@@ -183,6 +323,78 @@
                     else
                     {
                         <p class="no-content">No modules available yet.</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Reviews Section -->
+            <div class="course-section" id="reviews-section">
+                <h2 class="course-section-title">Student reviews</h2>
+                <div class="course-reviews-summary">
+                    <div class="reviews-summary-left">
+                        <div class="average-rating-large" id="avg-rating-value">@avgRating.ToString("0.0")</div>
+                        <div class="rating-stars-large" id="avg-rating-stars">
+                            @string.Concat(System.Linq.Enumerable.Repeat("★", roundedRating))@string.Concat(System.Linq.Enumerable.Repeat("☆", 5 - roundedRating))
+                        </div>
+                        <div class="total-reviews-label" id="total-reviews-label">Course Rating • @reviewsCount reviews</div>
+                    </div>
+                </div>
+
+                <!-- Review Submission Form -->
+                <div class="review-form-card" id="write-review-container" style="display: none;">
+                    <h4>Write a Review</h4>
+                    <form id="submit-review-form">
+                        <div class="form-group">
+                            <label>Your Rating</label>
+                            <div class="star-rating-picker" id="star-picker">
+                                <span class="picker-star" data-value="1">★</span>
+                                <span class="picker-star" data-value="2">★</span>
+                                <span class="picker-star" data-value="3">★</span>
+                                <span class="picker-star" data-value="4">★</span>
+                                <span class="picker-star" data-value="5">★</span>
+                            </div>
+                            <input type="hidden" id="review-rating-input" required value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="review-comment">Review Comment</label>
+                            <textarea id="review-comment" rows="3" placeholder="Tell us about your learning experience..." required maxlength="1000"></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary" id="btn-submit-review">Submit Review</button>
+                    </form>
+                </div>
+
+                <div class="review-login-prompt" id="review-status-prompt" style="margin-top: 15px; font-style: italic; color: #a0a0a8;">
+                    <!-- Dynamically populated -->
+                </div>
+
+                <hr class="divider" style="margin: 28px 0; border-top: 1px solid #222228;">
+
+                <!-- Reviews List -->
+                <div class="course-reviews-list" id="reviews-list-container">
+                    @if (Model.Reviews != null && Model.Reviews.Count > 0)
+                    {
+                        @foreach (var review in Model.Reviews)
+                        {
+                            <div class="review-item">
+                                <div class="review-item-header">
+                                    <div class="reviewer-avatar">
+                                        <img src="https://ui-avatars.com/api/?name=@Uri.EscapeDataString(review.ReviewerName)&background=f5a623&color=0a0a0b" alt="@review.ReviewerName">
+                                    </div>
+                                    <div class="reviewer-meta">
+                                        <h5 class="reviewer-name">@review.ReviewerName</h5>
+                                        <div class="review-rating-stars">
+                                            @string.Concat(System.Linq.Enumerable.Repeat("★", review.Rating))@string.Concat(System.Linq.Enumerable.Repeat("☆", 5 - review.Rating))
+                                            <span class="review-date">@review.CreatedAt.ToString("MMM dd, yyyy")</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="review-comment">@review.Comment</p>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="no-reviews text-muted">No reviews yet for this course. Be the first to leave one!</p>
                     }
                 </div>
             </div>
@@ -397,6 +609,241 @@
             window.addEventListener('auth-state-changed', function(e) {
                 checkEnrollment();
                 setupLessons();
+            });
+
+            // ===== COURSE REVIEWS INTERACTION =====
+            const courseId = @Model.Id;
+            const starPicker = document.getElementById('star-picker');
+            const ratingInput = document.getElementById('review-rating-input');
+            const submitForm = document.getElementById('submit-review-form');
+            const reviewComment = document.getElementById('review-comment');
+            const writeReviewContainer = document.getElementById('write-review-container');
+            const reviewStatusPrompt = document.getElementById('review-status-prompt');
+            const reviewsListContainer = document.getElementById('reviews-list-container');
+            const avgRatingValue = document.getElementById('avg-rating-value');
+            const avgRatingStars = document.getElementById('avg-rating-stars');
+            const totalReviewsLabel = document.getElementById('total-reviews-label');
+
+            if (starPicker && ratingInput) {
+                const stars = Array.from(starPicker.querySelectorAll('.picker-star'));
+                
+                stars.forEach((star, index) => {
+                    star.addEventListener('mouseenter', () => {
+                        stars.forEach((s, idx) => {
+                            if (idx <= index) s.classList.add('hover');
+                            else s.classList.remove('hover');
+                        });
+                    });
+                    
+                    star.addEventListener('mouseleave', () => {
+                        stars.forEach(s => s.classList.remove('hover'));
+                    });
+                    
+                    star.addEventListener('click', () => {
+                        const val = parseInt(star.dataset.value);
+                        ratingInput.value = val;
+                        stars.forEach((s, idx) => {
+                            if (idx < val) s.classList.add('selected');
+                            else s.classList.remove('selected');
+                        });
+                    });
+                });
+            }
+
+            async function refreshReviewsUI() {
+                try {
+                    const response = await fetch(`/api/courses/${courseId}/reviews`);
+                    if (!response.ok) return;
+                    const reviews = await response.json();
+                    
+                    if (reviews.length === 0) {
+                        reviewsListContainer.innerHTML = '<p class="no-reviews text-muted">No reviews yet for this course. Be the first to leave one!</p>';
+                    } else {
+                        reviewsListContainer.innerHTML = reviews.map(r => {
+                            const dateStr = new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                            const filledStars = '★'.repeat(r.rating);
+                            const emptyStars = '☆'.repeat(5 - r.rating);
+                            return `
+                                <div class="review-item">
+                                    <div class="review-item-header">
+                                        <div class="reviewer-avatar">
+                                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(r.reviewerName)}&background=f5a623&color=0a0a0b" alt="${r.reviewerName}">
+                                        </div>
+                                        <div class="reviewer-meta">
+                                            <h5 class="reviewer-name">${r.reviewerName}</h5>
+                                            <div class="review-rating-stars">
+                                                <span>${filledStars}${emptyStars}</span>
+                                                <span class="review-date">${dateStr}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="review-comment">${r.comment}</p>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+
+                    if (reviews.length > 0) {
+                        const avg = (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1);
+                        const roundedAvg = Math.round(parseFloat(avg));
+                        const filled = '★'.repeat(roundedAvg);
+                        const empty = '☆'.repeat(5 - roundedAvg);
+                        
+                        if (avgRatingValue) avgRatingValue.textContent = avg;
+                        if (avgRatingStars) avgRatingStars.textContent = `${filled}${empty}`;
+                        if (totalReviewsLabel) totalReviewsLabel.textContent = `Course Rating • ${reviews.length} reviews`;
+
+                        document.querySelectorAll('.course-rating').forEach(el => {
+                            const scoreEl = el.querySelector('.rating-score');
+                            const starsEl = el.querySelector('.rating-stars');
+                            const countEl = el.querySelector('.rating-count');
+                            if (scoreEl) scoreEl.textContent = avg;
+                            if (starsEl) starsEl.textContent = `${filled}${empty}`;
+                            if (countEl) {
+                                countEl.textContent = countEl.textContent.includes('reviews') ? `(${reviews.length} reviews)` : `(${reviews.length})`;
+                            }
+                        });
+                    } else {
+                        if (avgRatingValue) avgRatingValue.textContent = '0.0';
+                        if (avgRatingStars) avgRatingStars.textContent = '☆☆☆☆☆';
+                        if (totalReviewsLabel) totalReviewsLabel.textContent = 'Course Rating • 0 reviews';
+
+                        document.querySelectorAll('.course-rating').forEach(el => {
+                            const scoreEl = el.querySelector('.rating-score');
+                            const starsEl = el.querySelector('.rating-stars');
+                            const countEl = el.querySelector('.rating-count');
+                            if (scoreEl) scoreEl.textContent = '0.0';
+                            if (starsEl) starsEl.textContent = '☆☆☆☆☆';
+                            if (countEl) {
+                                countEl.textContent = countEl.textContent.includes('reviews') ? '(0 reviews)' : '(0)';
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.error('Error refreshing reviews:', err);
+                }
+            }
+
+            async function checkReviewEligibility() {
+                const token = localStorage.getItem('userToken');
+                if (!token) {
+                    if (reviewStatusPrompt) {
+                        reviewStatusPrompt.textContent = "Please log in to write a review.";
+                        reviewStatusPrompt.style.display = "block";
+                    }
+                    if (writeReviewContainer) writeReviewContainer.style.display = "none";
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/courses/${courseId}/reviews/can-review`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (!response.ok) {
+                        if (reviewStatusPrompt) {
+                            reviewStatusPrompt.textContent = "Please enroll in this course to leave a review.";
+                            reviewStatusPrompt.style.display = "block";
+                        }
+                        if (writeReviewContainer) writeReviewContainer.style.display = "none";
+                        return;
+                    }
+                    
+                    const data = await response.json();
+                    if (data.canReview) {
+                        if (reviewStatusPrompt) reviewStatusPrompt.style.display = "none";
+                        if (writeReviewContainer) writeReviewContainer.style.display = "block";
+                        
+                        const reviewsResp = await fetch(`/api/courses/${courseId}/reviews`);
+                        if (reviewsResp.ok) {
+                            const reviews = await reviewsResp.json();
+                            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+                            const myReview = reviews.find(r => r.userId === userData.id || r.reviewerName === userData.fullName || r.reviewerName === userData.FullName);
+                            if (myReview) {
+                                ratingInput.value = myReview.rating;
+                                if (reviewComment) reviewComment.value = myReview.comment;
+                                const stars = Array.from(starPicker.querySelectorAll('.picker-star'));
+                                stars.forEach((s, idx) => {
+                                    if (idx < myReview.rating) s.classList.add('selected');
+                                    else s.classList.remove('selected');
+                                });
+                                const submitBtn = document.getElementById('btn-submit-review');
+                                if (submitBtn) submitBtn.textContent = "Update Review";
+                                const cardTitle = writeReviewContainer.querySelector('h4');
+                                if (cardTitle) cardTitle.textContent = "Edit Your Review";
+                            }
+                        }
+                    } else {
+                        if (reviewStatusPrompt) {
+                            reviewStatusPrompt.textContent = "Please enroll in this course or activate a subscription to leave a review.";
+                            reviewStatusPrompt.style.display = "block";
+                        }
+                        if (writeReviewContainer) writeReviewContainer.style.display = "none";
+                    }
+                } catch (err) {
+                    console.error('Error checking review eligibility:', err);
+                }
+            }
+
+            if (submitForm) {
+                submitForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const token = localStorage.getItem('userToken');
+                    if (!token) return;
+
+                    const rating = parseInt(ratingInput.value);
+                    if (rating < 1 || rating > 5) {
+                        alert("Please select a rating between 1 and 5 stars.");
+                        return;
+                    }
+
+                    const comment = reviewComment.value.trim();
+                    if (!comment) return;
+
+                    const submitBtn = document.getElementById('btn-submit-review');
+                    if (submitBtn) submitBtn.disabled = true;
+
+                    try {
+                        const response = await fetch(`/api/courses/${courseId}/reviews`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ rating, comment })
+                        });
+
+                        if (response.ok) {
+                            const toast = document.getElementById('toast');
+                            if (toast) {
+                                toast.querySelector('.toast-title').textContent = 'Success';
+                                toast.querySelector('.toast-message').textContent = 'Your review has been saved!';
+                                toast.classList.add('show');
+                                setTimeout(() => toast.classList.remove('show'), 3000);
+                            }
+                            
+                            await refreshReviewsUI();
+                            await checkReviewEligibility();
+                        } else {
+                            const err = await response.json();
+                            alert(err.message || "Failed to submit review.");
+                        }
+                    } catch (err) {
+                        console.error('Error submitting review:', err);
+                        alert("An error occurred. Please try again.");
+                    } finally {
+                        if (submitBtn) submitBtn.disabled = false;
+                    }
+                });
+            }
+
+            checkReviewEligibility();
+            window.addEventListener('auth-state-changed', () => {
+                checkReviewEligibility();
+            });
+            window.addEventListener('course-enrolled', () => {
+                checkReviewEligibility();
             });
         });
     </script>

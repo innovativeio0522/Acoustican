@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using Acoustican.DTOs;
+using Acoustican.Extensions;
 using Acoustican.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,50 +11,64 @@ namespace Acoustican.Controllers;
 [Authorize]
 public class CartController(ICartService cartService) : ControllerBase
 {
-    private int GetUserId() =>
-        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private int? CurrentUserId => User.GetUserId();
 
     [HttpGet]
     public async Task<IActionResult> GetCart()
     {
-        var items = await cartService.GetCartItemsAsync(GetUserId());
+        if (CurrentUserId is not { } userId)
+            return Unauthorized(new { success = false, message = "Invalid or expired token" });
+
+        var items = await cartService.GetCartItemsAsync(userId);
         return Ok(new { success = true, items });
     }
 
     [HttpGet("count")]
     public async Task<IActionResult> GetCartCount()
     {
-        var count = await cartService.GetCartCountAsync(GetUserId());
+        if (CurrentUserId is not { } userId)
+            return Unauthorized(new { success = false, message = "Invalid or expired token" });
+
+        var count = await cartService.GetCartCountAsync(userId);
         return Ok(new { success = true, count });
     }
 
     [HttpPost]
     public async Task<IActionResult> AddToCart([FromBody] AddToCartRequest request)
     {
-        var (success, message) = await cartService.AddToCartAsync(GetUserId(), request.CourseId);
+        if (CurrentUserId is not { } userId)
+            return Unauthorized(new { success = false, message = "Invalid or expired token" });
+
+        var (success, message) = await cartService.AddToCartAsync(userId, request.CourseId);
         if (!success)
             return BadRequest(new { success, message });
 
-        var count = await cartService.GetCartCountAsync(GetUserId());
+        var count = await cartService.GetCartCountAsync(userId);
         return Ok(new { success, message, cartCount = count });
     }
 
     [HttpDelete("{courseId}")]
     public async Task<IActionResult> RemoveFromCart(int courseId)
     {
-        var (success, message) = await cartService.RemoveFromCartAsync(GetUserId(), courseId);
+        if (CurrentUserId is not { } userId)
+            return Unauthorized(new { success = false, message = "Invalid or expired token" });
+
+        var (success, message) = await cartService.RemoveFromCartAsync(userId, courseId);
         if (!success)
             return BadRequest(new { success, message });
 
-        var count = await cartService.GetCartCountAsync(GetUserId());
+        var count = await cartService.GetCartCountAsync(userId);
         return Ok(new { success, message, cartCount = count });
     }
 
     [HttpPost("sync")]
     public async Task<IActionResult> SyncCart([FromBody] SyncCartRequest request)
     {
-        var (added, skipped) = await cartService.SyncCartAsync(GetUserId(), request.CourseIds);
-        var count = await cartService.GetCartCountAsync(GetUserId());
+        if (CurrentUserId is not { } userId)
+            return Unauthorized(new { success = false, message = "Invalid or expired token" });
+
+        var (added, skipped) = await cartService.SyncCartAsync(userId, request.CourseIds);
+        var count = await cartService.GetCartCountAsync(userId);
         return Ok(new
         {
             success = true,

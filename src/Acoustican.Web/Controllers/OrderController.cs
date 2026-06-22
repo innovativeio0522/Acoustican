@@ -1,6 +1,6 @@
-using System.Security.Claims;
-using Acoustican.Services;
 using Acoustican.DTOs;
+using Acoustican.Extensions;
+using Acoustican.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,13 +11,15 @@ namespace Acoustican.Controllers;
 [Authorize]
 public class OrderController(IOrderService orderService) : ControllerBase
 {
-    private int GetUserId() =>
-        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private int? CurrentUserId => User.GetUserId();
 
     [HttpPost("checkout")]
     public async Task<IActionResult> Checkout()
     {
-        var (success, message, order) = await orderService.CreateOrderFromCartAsync(GetUserId());
+        if (CurrentUserId is not { } userId)
+            return Unauthorized(new { success = false, message = "Invalid or expired token" });
+
+        var (success, message, order) = await orderService.CreateOrderFromCartAsync(userId);
         if (!success)
             return BadRequest(new { success, message });
 
@@ -27,7 +29,10 @@ public class OrderController(IOrderService orderService) : ControllerBase
     [HttpPost("verify")]
     public async Task<IActionResult> Verify([FromBody] VerifyPaymentDto dto)
     {
-        var (success, message) = await orderService.VerifyOrderPaymentAsync(GetUserId(), dto);
+        if (CurrentUserId is not { } userId)
+            return Unauthorized(new { success = false, message = "Invalid or expired token" });
+
+        var (success, message) = await orderService.VerifyOrderPaymentAsync(userId, dto);
         if (!success)
             return BadRequest(new { success, message });
 
@@ -37,14 +42,20 @@ public class OrderController(IOrderService orderService) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetOrders()
     {
-        var orders = await orderService.GetOrdersAsync(GetUserId());
+        if (CurrentUserId is not { } userId)
+            return Unauthorized(new { success = false, message = "Invalid or expired token" });
+
+        var orders = await orderService.GetOrdersAsync(userId);
         return Ok(new { success = true, orders });
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetOrder(int id)
     {
-        var order = await orderService.GetOrderByIdAsync(GetUserId(), id);
+        if (CurrentUserId is not { } userId)
+            return Unauthorized(new { success = false, message = "Invalid or expired token" });
+
+        var order = await orderService.GetOrderByIdAsync(userId, id);
         if (order == null)
             return NotFound(new { success = false, message = "Order not found" });
 
@@ -54,7 +65,10 @@ public class OrderController(IOrderService orderService) : ControllerBase
     [HttpPost("{id}/cancel")]
     public async Task<IActionResult> CancelOrder(int id)
     {
-        var (success, message) = await orderService.CancelOrderAsync(GetUserId(), id);
+        if (CurrentUserId is not { } userId)
+            return Unauthorized(new { success = false, message = "Invalid or expired token" });
+
+        var (success, message) = await orderService.CancelOrderAsync(userId, id);
         if (!success)
             return BadRequest(new { success, message });
 

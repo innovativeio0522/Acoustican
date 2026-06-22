@@ -1,3 +1,24 @@
+// Global fetch interceptor to handle expired JWT tokens (401 Unauthorized)
+(function () {
+    const originalFetch = window.fetch;
+    window.fetch = async function (...args) {
+        const response = await originalFetch(...args);
+        if (response.status === 401) {
+            if (localStorage.getItem('userToken') || localStorage.getItem('adminToken')) {
+                localStorage.removeItem('userToken');
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('userData');
+                localStorage.removeItem('enrolledCourses');
+                localStorage.removeItem('hasActiveSubscription');
+                localStorage.removeItem('pendingTierId');
+                localStorage.removeItem('pendingTierName');
+                window.location.reload();
+            }
+        }
+        return response;
+    };
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
     const API_URL = '/api';
 
@@ -11,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => toast.classList.remove('show'), 4000);
         }
     }
+    window.showNotification = showToast;
 
     // ===== CONFIRM SUBSCRIPTION MODAL =====
     function showSubscribeConfirm(tierId, tierName, onConfirm) {

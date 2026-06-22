@@ -61,37 +61,18 @@ public class PricingService(ApplicationDbContext context, IMapper mapper, ILogge
             throw new ArgumentException("Billing period must be 'monthly' or 'annually'");
         }
 
-        using var transaction = await _context.Database.BeginTransactionAsync();
-        try
+        var tier = _mapper.Map<PricingTier>(dto);
+        tier.Features = dto.Features.Select((feature, i) => new PricingFeature
         {
-            var tier = _mapper.Map<PricingTier>(dto);
-            _context.PricingTiers.Add(tier);
-            await _context.SaveChangesAsync();
+            Feature = feature,
+            IsIncluded = true,
+            DisplayOrder = i
+        }).ToList();
 
-            for (int i = 0; i < dto.Features.Count; i++)
-            {
-                var feature = dto.Features[i];
-                _context.PricingFeatures.Add(new PricingFeature
-                {
-                    PricingTierId = tier.Id,
-                    Feature = feature,
-                    IsIncluded = true,
-                    DisplayOrder = i
-                });
-            }
+        _context.PricingTiers.Add(tier);
+        await _context.SaveChangesAsync();
 
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
-            
-            tier = await _context.PricingTiers.Include(p => p.Features).FirstAsync(p => p.Id == tier.Id);
-            return _mapper.Map<PricingTierDto>(tier);
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Error creating pricing tier");
-            throw;
-        }
+        return _mapper.Map<PricingTierDto>(tier);
     }
 
     public async Task<PricingTierDto?> UpdateTierAsync(int id, UpdatePricingTierDto dto)
@@ -107,42 +88,29 @@ public class PricingService(ApplicationDbContext context, IMapper mapper, ILogge
         
         if (tier == null) return null;
 
-        using var transaction = await _context.Database.BeginTransactionAsync();
-        try
+        _mapper.Map(dto, tier);
+        tier.UpdatedAt = DateTime.UtcNow;
+        _context.PricingTiers.Update(tier);
+
+        // Remove old features and add new ones directly to the tracked collection
+        tier.Features.Clear();
+        for (int i = 0; i < dto.Features.Count; i++)
         {
-            _mapper.Map(dto, tier);
-            tier.UpdatedAt = DateTime.UtcNow;
-            _context.PricingTiers.Update(tier);
-
-            // Remove old features and add new ones
-            _context.PricingFeatures.RemoveRange(tier.Features);
-            await _context.SaveChangesAsync();
-
-            for (int i = 0; i < dto.Features.Count; i++)
+            var feature = dto.Features[i];
+            tier.Features.Add(new PricingFeature
             {
-                var feature = dto.Features[i];
-                _context.PricingFeatures.Add(new PricingFeature
-                {
-                    PricingTierId = tier.Id,
-                    Feature = feature,
-                    IsIncluded = true,
-                    DisplayOrder = i
-                });
-            }
-
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            tier = await _context.PricingTiers.Include(p => p.Features).FirstAsync(p => p.Id == id);
-            return _mapper.Map<PricingTierDto>(tier);
+                Feature = feature,
+                IsIncluded = true,
+                DisplayOrder = i
+            });
         }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Error updating pricing tier");
-            throw;
-        }
+
+        await _context.SaveChangesAsync();
+
+        return _mapper.Map<PricingTierDto>(tier);
     }
+
+
 
     public async Task<bool> DeleteTierAsync(int id)
     {

@@ -14,6 +14,10 @@ public class MappingProfile : Profile
         CreateMap<CreateCourseDto, Course>();
         CreateMap<UpdateCourseDto, Course>();
 
+        // Review Mappings
+        CreateMap<CourseReview, CourseReviewDto>()
+            .ForMember(dest => dest.ReviewerName, opt => opt.MapFrom(src => src.User != null ? src.User.FullName : string.Empty));
+
         // Module Mappings
         CreateMap<CourseModule, CourseModuleDto>().ReverseMap();
         CreateMap<CreateCourseModuleDto, CourseModule>();

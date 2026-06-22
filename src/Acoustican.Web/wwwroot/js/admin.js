@@ -2,20 +2,53 @@ const API_URL = '/api';
 
 // Retrieve token helper
 function getAdminToken() {
-    return localStorage.getItem('adminToken');
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+    if (!token) return null;
+
+    try {
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        const role = userData.role || userData.Role;
+        if (role === 'Admin' || role === 'ContentManager') {
+            return token;
+        }
+    } catch (e) {}
+
+    return null;
 }
 
 // Check auth state
 function checkAdminAuth() {
-    // Admin token is only used to gate /admin/* routes.
-    const token = getAdminToken();
-
-    // Only enforce when we are actually on an admin route.
     const isAdminRoute = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/');
     if (!isAdminRoute) return;
 
-    if (!token) {
-        window.location.href = '/admin';
+    const isLoginPage = window.location.pathname === '/admin';
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+    
+    let isAuthorized = false;
+    let role = null;
+    
+    if (token) {
+        try {
+            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+            role = userData.role || userData.Role;
+            if (role === 'Admin' || role === 'ContentManager') {
+                isAuthorized = true;
+            }
+        } catch (e) {}
+    }
+
+    if (!isAuthorized) {
+        if (!isLoginPage) {
+            if (token && role === 'User') {
+                window.location.href = '/';
+            } else {
+                window.location.href = '/admin';
+            }
+        }
+    } else {
+        if (isLoginPage) {
+            window.location.href = '/admin/dashboard';
+        }
     }
 }
 
