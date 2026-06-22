@@ -9,9 +9,27 @@
     <link href="/js/dataTables.bootstrap5.min.css" rel="stylesheet">
 
     <script>
-        if (!localStorage.getItem('adminToken')) {
-            window.location.href = '/admin';
-        }
+        (function() {
+            const token = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+            let isAuthorized = false;
+            let role = null;
+            if (token) {
+                try {
+                    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+                    role = userData.role || userData.Role;
+                    if (role === 'Admin' || role === 'ContentManager') {
+                        isAuthorized = true;
+                    }
+                } catch (e) {}
+            }
+            if (!isAuthorized) {
+                if (token && role === 'User') {
+                    window.location.href = '/';
+                } else {
+                    window.location.href = '/admin';
+                }
+            }
+        })();
     </script>
 
     <style>

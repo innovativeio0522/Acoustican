@@ -24,6 +24,7 @@ public class CourseDto
     public string Requirements { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public List<CourseReviewDto> Reviews { get; set; } = new();
     public List<CourseModuleDto> Modules { get; set; } = new();
 }
 
@@ -110,4 +111,26 @@ public class UpdateCourseDto
 
     [StringLength(5000)]
     public string Requirements { get; set; } = string.Empty;
+}
+
+public class CourseReviewDto
+{
+    public int Id { get; set; }
+    public int CourseId { get; set; }
+    public int UserId { get; set; }
+    public string ReviewerName { get; set; } = string.Empty;
+    public int Rating { get; set; }
+    public string Comment { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
+public class CreateReviewDto
+{
+    [Required]
+    [Range(1, 5, ErrorMessage = "Rating must be between 1 and 5.")]
+    public int Rating { get; set; }
+
+    [Required]
+    [StringLength(1000, ErrorMessage = "Comment cannot exceed 1000 characters.")]
+    public string Comment { get; set; } = string.Empty;
 }

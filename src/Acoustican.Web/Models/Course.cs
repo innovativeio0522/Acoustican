@@ -24,4 +24,5 @@ public class Course
 
     // Navigation properties
     public ICollection<CourseModule> Modules { get; set; } = [];
+    public ICollection<CourseReview> Reviews { get; set; } = [];
 }

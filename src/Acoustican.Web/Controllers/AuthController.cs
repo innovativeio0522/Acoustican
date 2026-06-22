@@ -65,12 +65,10 @@ public class AuthController(IAuthService authService) : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
-        var (success, message, token) = await authService.RequestPasswordResetAsync(request.Email);
-        if (!success)
-            return BadRequest(new { success, message });
+        await authService.RequestPasswordResetAsync(request.Email);
 
-        // Token is sent via email only — never return it in the response
-        return Ok(new { success, message });
+        // Always return 200 OK to prevent user enumeration
+        return Ok(new { success = true, message = "If an account exists with this email, you will receive a password reset link" });
     }
 
     [HttpPost("reset-password")]

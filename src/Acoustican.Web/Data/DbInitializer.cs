@@ -230,6 +230,8 @@ public static class DbInitializer
                     Console.WriteLine("[DbInitializer] Cleared legacy local video paths from lessons. Admin must set VdoCipher IDs.");
                 }
 
+                SeedSampleReviews(context, updateSeedDateTime);
+
                 Console.WriteLine("[DbInitializer] Database already seeded — skipping.");
                 return; // DB has been seeded
             }
@@ -546,13 +548,74 @@ public static class DbInitializer
 
         context.Lessons.AddRange(lesson1, lesson2, lesson3, lesson4);
         context.SaveChanges();
-            Console.WriteLine("[DbInitializer] Database seeded successfully.");
+
+        SeedSampleReviews(context, seedDateTime);
+
+        Console.WriteLine("[DbInitializer] Database seeded successfully.");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[DbInitializer] ERROR seeding database: {ex.Message}");
             Console.WriteLine(ex.ToString());
             throw; // Re-throw so the app fails fast on seed errors
+        }
+    }
+
+    private static void SeedSampleReviews(ApplicationDbContext context, DateTime updateSeedDateTime)
+    {
+        if (!context.CourseReviews.Any())
+        {
+            var sampleUsers = new List<AdminUser>
+            {
+                new AdminUser { Email = "john@example.com", FullName = "John Doe", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password@123"), Role = "User", CreatedAt = updateSeedDateTime, UpdatedAt = updateSeedDateTime },
+                new AdminUser { Email = "jane@example.com", FullName = "Jane Miller", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password@123"), Role = "User", CreatedAt = updateSeedDateTime, UpdatedAt = updateSeedDateTime },
+                new AdminUser { Email = "mark@example.com", FullName = "Mark Taylor", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password@123"), Role = "User", CreatedAt = updateSeedDateTime, UpdatedAt = updateSeedDateTime },
+                new AdminUser { Email = "emily@example.com", FullName = "Emily Watson", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password@123"), Role = "User", CreatedAt = updateSeedDateTime, UpdatedAt = updateSeedDateTime }
+            };
+
+            context.AdminUsers.AddRange(sampleUsers);
+            context.SaveChanges();
+
+            var courses = context.Courses.ToList();
+            var reviews = new List<CourseReview>();
+
+            foreach (var course in courses)
+            {
+                if (course.Title == "Guitar Basics Masterclass")
+                {
+                    reviews.Add(new CourseReview { CourseId = course.Id, UserId = sampleUsers[0].Id, Rating = 5, Comment = "This is the most comprehensive beginner course! Erich is an incredible teacher.", CreatedAt = updateSeedDateTime.AddDays(1), UpdatedAt = updateSeedDateTime.AddDays(1) });
+                    reviews.Add(new CourseReview { CourseId = course.Id, UserId = sampleUsers[1].Id, Rating = 5, Comment = "Very clear step-by-step videos. Highly recommended for absolute beginners.", CreatedAt = updateSeedDateTime.AddDays(2), UpdatedAt = updateSeedDateTime.AddDays(2) });
+                    reviews.Add(new CourseReview { CourseId = course.Id, UserId = sampleUsers[2].Id, Rating = 5, Comment = "Loved the lesson structure. Easy to follow along.", CreatedAt = updateSeedDateTime.AddDays(3), UpdatedAt = updateSeedDateTime.AddDays(3) });
+                    reviews.Add(new CourseReview { CourseId = course.Id, UserId = sampleUsers[3].Id, Rating = 4, Comment = "Great lessons! Strumming patterns section was very helpful.", CreatedAt = updateSeedDateTime.AddDays(4), UpdatedAt = updateSeedDateTime.AddDays(4) });
+                }
+                else if (course.Title == "Fingerstyle Essentials")
+                {
+                    reviews.Add(new CourseReview { CourseId = course.Id, UserId = sampleUsers[0].Id, Rating = 5, Comment = "Excellent fingerstyle techniques. The PIMA explanations were crystal clear.", CreatedAt = updateSeedDateTime.AddDays(1), UpdatedAt = updateSeedDateTime.AddDays(1) });
+                    reviews.Add(new CourseReview { CourseId = course.Id, UserId = sampleUsers[1].Id, Rating = 5, Comment = "Travis picking exercises are fantastic. Helped me gain finger independence.", CreatedAt = updateSeedDateTime.AddDays(2), UpdatedAt = updateSeedDateTime.AddDays(2) });
+                    reviews.Add(new CourseReview { CourseId = course.Id, UserId = sampleUsers[2].Id, Rating = 4, Comment = "Good pace and beautiful song examples.", CreatedAt = updateSeedDateTime.AddDays(3), UpdatedAt = updateSeedDateTime.AddDays(3) });
+                }
+                else if (course.Title == "Blues Soloing Mastery")
+                {
+                    reviews.Add(new CourseReview { CourseId = course.Id, UserId = sampleUsers[0].Id, Rating = 5, Comment = "Awesome solo patterns! Erich's templates are very easy to adopt.", CreatedAt = updateSeedDateTime.AddDays(1), UpdatedAt = updateSeedDateTime.AddDays(1) });
+                    reviews.Add(new CourseReview { CourseId = course.Id, UserId = sampleUsers[1].Id, Rating = 4, Comment = "Learnt a lot of new scales. Very detailed.", CreatedAt = updateSeedDateTime.AddDays(2), UpdatedAt = updateSeedDateTime.AddDays(2) });
+                }
+            }
+
+            context.CourseReviews.AddRange(reviews);
+            context.SaveChanges();
+
+            foreach (var course in courses)
+            {
+                var courseReviews = context.CourseReviews.Where(r => r.CourseId == course.Id).Select(r => r.Rating).ToList();
+                if (courseReviews.Any())
+                {
+                    course.Rating = (decimal)courseReviews.Average();
+                    course.ReviewCount = courseReviews.Count;
+                }
+                context.Courses.Update(course);
+            }
+            context.SaveChanges();
+            Console.WriteLine("[DbInitializer] Seeded sample user reviews and updated course stats.");
         }
     }
 }

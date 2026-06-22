@@ -18,6 +18,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CartItem> CartItems { get; set; } = null!;
     public DbSet<Order> Orders { get; set; } = null!;
     public DbSet<OrderItem> OrderItems { get; set; } = null!;
+    public DbSet<CourseReview> CourseReviews { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -135,6 +136,23 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<PricingTier>()
             .HasIndex(p => p.DisplayOrder);
+
+        // CourseReview relationships
+        modelBuilder.Entity<CourseReview>()
+            .HasOne(r => r.Course)
+            .WithMany(c => c.Reviews)
+            .HasForeignKey(r => r.CourseId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<CourseReview>()
+            .HasOne(r => r.User)
+            .WithMany()
+            .HasForeignKey(r => r.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<CourseReview>()
+            .HasIndex(r => new { r.CourseId, r.UserId })
+            .IsUnique();
 
         // NOTE: Seed data is applied at runtime via DbInitializer.Initialize() in Program.cs.
         // HasData()-based seeding was removed because BCrypt.HashPassword() generates a

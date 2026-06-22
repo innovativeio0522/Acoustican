@@ -34,6 +34,8 @@ public class CourseService(ApplicationDbContext context, IMapper mapper) : ICour
     {
         var course = await context.Courses
             .AsNoTracking()
+            .Include(c => c.Reviews.OrderByDescending(r => r.CreatedAt))
+                .ThenInclude(r => r.User)
             .Include(c => c.Modules.OrderBy(m => m.DisplayOrder).ThenBy(m => m.ModuleNumber))
                 .ThenInclude(m => m.Lessons)
             .FirstOrDefaultAsync(c => c.Id == id);
